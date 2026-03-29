@@ -7,15 +7,11 @@ const PORT = 3000;
 const customerRoutes = require('./routes/customer');
 const cashierRoutes = require('./routes/cashier');
 const managerRoutes = require('./routes/manager');
-const menuRoutes    = require('./routes/menu');
-const kitchenRoutes = require('./routes/kitchen');
 
 //
 app.use('/customer', customerRoutes);
 app.use('/cashier', cashierRoutes);
 app.use('/manager', managerRoutes);
-app.use('/menu',    menuRoutes);
-app.use('/kitchen', kitchenRoutes);
 
 
 // ---- GET REQUESTS --------
