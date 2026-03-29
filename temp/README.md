@@ -1,118 +1,332 @@
-# Project 3: Moonwake Tea Atelier Web POS
+# Moonwake Tea Atelier Web POS
 
-`project3` is a customer-facing web POS inspired by the existing Java GUI cashier flow in this repository.
+Moonwake Tea Atelier is a customer-facing bubble tea point-of-sale web app built with React on the frontend and Express/PostgreSQL on the backend.
 
-It reimagines the original desktop system as a hosted SaaS-style ordering experience with:
+This project keeps the menu browsing and drink customization ideas from the original desktop POS flow, but presents them as a modern customer ordering experience.
 
-- a React storefront for customers
-- an Express.js backend API
-- a PostgreSQL schema designed for the TAMU AWS database
-- accessible ordering and checkout interactions
-
-## Concept
-
-The imaginary vendor for this project is **Moonwake Tea Atelier**, a late-night bubble tea studio with a tidal/ocean-inspired brand.
-
-The design takes inspiration from the current GUI POS by preserving:
-
-- category-based browsing
-- drink customization
-- topping selection
-- cart and order summary flow
-
-It expands the experience by adding:
-
-- a mobile-friendly customer ordering interface
-- clearer visual hierarchy
-- accessibility-focused controls and labels
-- a backend structure that can evolve without rewriting the frontend
-
-## Folder Structure
+## Project Structure
 
 ```text
-project3/
-  client/              React frontend
-  server/              Express API
+temp/
+  client/              React + Vite frontend
+  server/              Express API + PostgreSQL access
   README.md
 ```
 
 ## Tech Stack
 
-- Frontend: JavaScript, React, HTML, CSS
+- Frontend: React, JavaScript, HTML, CSS
 - Backend: Express.js
 - Database: PostgreSQL
 
-## Frontend Highlights
+## Features
 
-- Category filters for milk tea, fruit tea, seasonal, and slush drinks
-- Accessible customization drawer with:
-  - size selection
-  - sweetness
-  - ice level
-  - toppings
-  - special instructions
-- Real-time cart totals and itemized pricing
-- Checkout form with pickup details
-- API fallback sample menu so UI development can continue before the database is live
+- Customer-facing drink menu with category filters
+- Drink customization modal for size, sweetness, ice, toppings, and notes
+- Cart and checkout flow
+- Order submission to the backend API
+- Inventory lookup API
+- Order history lookup API
+- Database-backed mode with a sample-data fallback when PostgreSQL is not configured
 
-## Backend Highlights
+## Requirements
 
-- `GET /api/health`
-- `GET /api/menu`
-- `POST /api/orders`
+- Node.js 18+ recommended
+- npm
+- PostgreSQL access if you want database-backed orders and inventory
 
-The server supports two modes:
+## Running the Project
 
-- **database mode** when PostgreSQL environment variables are configured
-- **sample-data mode** when the database is unavailable
+Run the server and client in separate terminals.
 
-This makes local development easier while still aligning with the project requirement of maintaining a real backend/database architecture.
-
-## PostgreSQL Setup
-
-The SQL schema is located at:
-
-- `server/db/schema.sql`
-
-Create a `.env` file inside `server/` using `.env.example` as a guide.
-
-## Suggested Run Flow
-
-Because Node is not installed in the current environment, dependencies were not installed here. Once Node is available:
-
-1. Install frontend dependencies in `client/`
-2. Install backend dependencies in `server/`
-3. Start the backend server
-4. Start the React frontend
-
-Suggested commands:
+### 1. Start the Server
 
 ```bash
-cd project3/server
+cd server
 npm install
 npm run dev
 ```
 
+The API runs on `http://localhost:3001` by default.
+
+### 2. Start the Client
+
+Open a second terminal:
+
 ```bash
-cd project3/client
+cd client
 npm install
 npm run dev
 ```
+
+Vite will print a local frontend URL, usually `http://localhost:5173`.
+
+Open that URL in your browser.
+
+## Database Configuration
+
+The backend only connects to PostgreSQL when `DB_PASSWORD` is set. If it is missing, the server starts in sample-data mode.
+
+Create a `server/.env` file with values like these:
+
+```env
+PORT=3001
+DB_HOST=csce-315-db.engr.tamu.edu
+DB_PORT=5432
+DB_NAME=team_35_db
+DB_USER=team_35
+DB_PASSWORD=your_password_here
+DB_SSL=true
+DEFAULT_EMPLOYEE_ID=1
+```
+
+Notes:
+
+- `DB_PASSWORD` is required for a real database connection.
+- `DB_SSL=false` disables SSL if your local database does not need it.
+- `DEFAULT_EMPLOYEE_ID` is used when inserting into the existing `orders` table and no employee id is sent in the request.
+
+## Database Schema Notes
+
+This server supports two database layouts:
+
+1. The existing class-project schema:
+   - `orders`
+   - `order_item`
+   - `menu_item`
+   - `item_inventory`
+   - `other_item_ingredients`
+
+2. The fallback project3 schema:
+   - `customer_orders`
+   - `order_items`
+   - `order_item_toppings`
+
+If the existing schema works, the server writes there first. If not, it can fall back to the project3 schema when those tables exist.
+
+The sample schema file is located at:
+
+```text
+server/db/schema.sql
+```
+
+## API Routes
+
+All routes are served from the Express backend under `/api`.
+
+### `GET /api/health`
+
+Checks whether the backend is running and whether PostgreSQL is connected.
+
+Example response:
+
+```json
+{
+  "service": "moonwake-web-pos-server",
+  "status": "ok",
+  "database": "connected"
+}
+```
+
+Possible `database` values:
+
+- `connected`
+- `sample-data-mode`
+
+### `GET /api/menu`
+
+Returns the menu used by the customer frontend.
+
+Behavior:
+
+- Uses the existing database schema when available
+- Falls back to the project3 schema when available
+- Falls back to sample menu data if database queries fail
+
+Example response shape:
+
+```json
+{
+  "source": "database-existing",
+  "items": [
+    {
+      "id": 1,
+      "name": "Classic Milk Tea",
+      "category": "Milk Tea",
+      "description": "A signature drink.",
+      "basePrice": 5.5,
+      "toppings": [
+        {
+          "id": 17,
+          "name": "Boba",
+          "price": 0.75
+        }
+      ]
+    }
+  ]
+}
+```
+
+### `GET /api/inventory`
+
+Returns inventory rows from `item_inventory`.
+
+Optional query parameters:
+
+- `category`
+- `lowStock=true`
+- `threshold=10`
+
+Examples:
+
+```text
+GET /api/inventory
+GET /api/inventory?category=ingredient
+GET /api/inventory?lowStock=true
+GET /api/inventory?lowStock=true&threshold=15
+```
+
+Example response:
+
+```json
+{
+  "count": 2,
+  "items": [
+    {
+      "item_inventory_id": 1,
+      "name": "Brown Sugar Boba",
+      "quantity_available": 42,
+      "price_per_unit": 0.75,
+      "item_category": "ingredient"
+    }
+  ]
+}
+```
+
+If the database is not configured, this route returns `503`.
+
+### `GET /api/orders`
+
+Returns recent orders from the database.
+
+Optional query parameters:
+
+- `limit`
+
+Examples:
+
+```text
+GET /api/orders
+GET /api/orders?limit=50
+```
+
+Behavior:
+
+- Tries the existing `orders` schema first
+- Falls back to the `customer_orders` schema if needed
+
+If the database is not configured, this route returns `503`.
+
+### `GET /api/orders/:id`
+
+Returns a single order and its associated items.
+
+Examples:
+
+```text
+GET /api/orders/1
+GET /api/orders/123
+```
+
+Behavior:
+
+- Tries the existing order schema first
+- Falls back to the project3 order schema if needed
+- Returns `404` if the order does not exist
+- Returns `400` if the id is not a positive integer
+
+### `POST /api/orders`
+
+Creates a new order.
+
+In database mode, this route:
+
+- validates the order payload
+- calculates ingredient usage from `other_item_ingredients`
+- decrements `item_inventory`
+- inserts the order
+- inserts order items
+- commits everything in one transaction
+
+In sample-data mode, it accepts the order and returns a generated order number without writing to PostgreSQL.
+
+Example request body:
+
+```json
+{
+  "customerName": "Alex",
+  "pickupWindow": "ASAP",
+  "orderType": "Pickup",
+  "totals": {
+    "subtotal": 6.30,
+    "tax": 0.52,
+    "total": 6.82
+  },
+  "items": [
+    {
+      "menuItemId": 3,
+      "name": "Tidal Drift Milk Tea",
+      "quantity": 1,
+      "size": "Large",
+      "sweetness": "75%",
+      "ice": "Regular Ice",
+      "toppings": ["Brown Sugar Boba"],
+      "toppingInventoryIds": [12],
+      "notes": "Light ice",
+      "total": 6.82
+    }
+  ]
+}
+```
+
+Example success response in database mode:
+
+```json
+{
+  "orderId": 15,
+  "orderNumber": "ORD-15",
+  "stored": true,
+  "schema": "existing"
+}
+```
+
+Example success response in sample-data mode:
+
+```json
+{
+  "orderNumber": "MW-123456",
+  "stored": false,
+  "message": "Accepted in sample-data mode."
+}
+```
+
+Common error cases:
+
+- `400` for missing `customerName` or empty `items`
+- `400` for invalid `menuItemId`
+- `500` for database insert or inventory errors
+
+## Development Notes
+
+- The frontend fetches menu data from `/api/menu`.
+- The frontend submits orders to `/api/orders`.
+- If the backend is unavailable, the client can still display sample menu data.
+- Inventory and order history routes are read-only inspection endpoints.
 
 ## Accessibility Notes
 
-The UI is designed with:
-
-- keyboard-friendly button groups
-- clear section headings
-- strong color contrast
-- visible focus states
-- form labels and helper text
-- non-color cues for status and pricing
-
-## Next Good Steps
-
-- connect the menu API to your live TAMU PostgreSQL tables
-- add authentication for staff and admin tools
-- add order history and loyalty features
-- wire inventory availability to disable sold-out ingredients dynamically
+- Keyboard-friendly control groups
+- Visible focus states
+- Clear headings and labels
+- Modal-based drink customization with close controls and `Escape` support
+- High-contrast text and controls
