@@ -1,0 +1,390 @@
+:root {
+  color-scheme: light;
+  --bg: #f5efe4;
+  --bg-panel: rgba(255, 252, 246, 0.82);
+  --paper: #fffaf2;
+  --ink: #1c2430;
+  --muted: #586370;
+  --accent: #0c7a6f;
+  --accent-deep: #07574f;
+  --accent-soft: #dff4ef;
+  --sun: #f2a65a;
+  --border: rgba(28, 36, 48, 0.12);
+  --shadow: 0 20px 45px rgba(28, 36, 48, 0.12);
+  --radius-lg: 28px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top left, rgba(12, 122, 111, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(242, 166, 90, 0.22), transparent 24%),
+    linear-gradient(180deg, #f9f4eb 0%, var(--bg) 100%);
+  color: var(--ink);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(12, 122, 111, 0.35);
+  outline-offset: 3px;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.page-shell {
+  width: min(1440px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 1.5rem 0 2rem;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+  margin-bottom: 1.5rem;
+}
+
+.hero__copy,
+.hero__panel,
+.menu-section,
+.customizer,
+.cart-panel {
+  backdrop-filter: blur(14px);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.hero__copy {
+  padding: 2rem;
+}
+
+.hero__copy h1 {
+  margin: 0.25rem 0 0.75rem;
+  font-size: clamp(2rem, 3vw, 3.6rem);
+  line-height: 0.98;
+}
+
+.hero__copy p {
+  margin: 0;
+  color: var(--muted);
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  font-size: 1.05rem;
+  max-width: 60ch;
+}
+
+.hero__panel {
+  padding: 1.4rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.hero-stat {
+  padding: 1rem;
+  background: var(--paper);
+  border-radius: var(--radius-md);
+}
+
+.hero-stat span,
+.section-tag {
+  display: block;
+  color: var(--accent-deep);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  font-weight: 700;
+}
+
+.hero-stat strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.05rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr) minmax(320px, 0.95fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.menu-section,
+.customizer,
+.cart-panel {
+  padding: 1.25rem;
+}
+
+.menu-toolbar,
+.customizer__header,
+.cart-panel__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.menu-toolbar h2,
+.customizer h2,
+.cart-panel h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.7rem;
+}
+
+.choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.choice-chip,
+.topping-pill,
+.button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.choice-chip,
+.topping-pill {
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.7rem 1rem;
+}
+
+.choice-chip:hover,
+.topping-pill:hover,
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.choice-chip--selected,
+.topping-pill--selected {
+  background: var(--accent-soft);
+  border-color: rgba(12, 122, 111, 0.35);
+}
+
+.menu-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.menu-card {
+  padding: 1.15rem;
+  background: var(--paper);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 220px;
+}
+
+.menu-card__eyebrow {
+  color: var(--accent-deep);
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.menu-card h3,
+.cart-item h3 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.menu-card p,
+.customizer__description,
+.cart-item p,
+.empty-state,
+.status-message {
+  margin: 0;
+  color: var(--muted);
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  line-height: 1.45;
+}
+
+.menu-card__footer,
+.customizer__summary,
+.totals div,
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.price {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.button {
+  padding: 0.8rem 1.1rem;
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+  font-weight: 700;
+}
+
+.button--primary {
+  background: var(--accent);
+  color: white;
+}
+
+.button--ghost {
+  background: transparent;
+  color: var(--accent-deep);
+  border-color: rgba(12, 122, 111, 0.18);
+}
+
+.button--small {
+  padding: 0.5rem 0.8rem;
+}
+
+.button--full {
+  width: 100%;
+}
+
+.customizer {
+  position: sticky;
+  top: 1rem;
+}
+
+.customizer--empty {
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.customizer__section {
+  margin-top: 1.2rem;
+}
+
+.customizer__section h3 {
+  margin: 0 0 0.7rem;
+}
+
+.toppings-grid {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.topping-pill {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notes-field {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+}
+
+.notes-field textarea,
+.checkout-form input,
+.checkout-form select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 0.95rem;
+  background: var(--paper);
+}
+
+.customizer__summary {
+  margin-top: 1.3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.cart-list {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.cart-item {
+  align-items: flex-start;
+  padding: 1rem;
+  background: var(--paper);
+  border-radius: var(--radius-md);
+}
+
+.cart-item__meta {
+  display: grid;
+  justify-items: end;
+  gap: 0.6rem;
+}
+
+.checkout-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.checkout-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+}
+
+.totals {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 0;
+}
+
+.totals__grand {
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border);
+  font-size: 1.08rem;
+}
+
+@media (max-width: 1180px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .customizer,
+  .cart-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 900px) {
+  .page-shell {
+    width: min(100% - 1rem, 1440px);
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero__copy {
+    padding: 1.5rem;
+  }
+}
