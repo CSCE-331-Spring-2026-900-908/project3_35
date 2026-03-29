@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require('express'); // Using express framework for the node js environment
 const path = require('path');
 const app = express();
 const PORT = 3000; 
@@ -35,7 +35,7 @@ app.listen(PORT, () => {
 
 
 // ---- DATABASE CONNECTION ---------
-const { Pool } = require('pg');
+const { Pool } = require('pg'); //postgre database that the node.js environment will use
 require('dotenv').config();
 
 const pool = new Pool({
@@ -47,41 +47,3 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false } 
 });
 
-// Update your Customer route to show REAL data
-app.get('/api/menu', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT name, price_per_unit, menu_item_category FROM menu_item ORDER BY menu_item_category');
-        res.json(result.rows); // Sends the database rows as a JSON array
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Database query failed" });
-    }
-});
-
-// Testing on customer page with peak sales
-app.get('/customer', async (req, res) => {
-    try {
-        const sql = `
-            SELECT o.order_time::date AS day, SUM(o.price)::numeric(12,2) AS total_sales 
-            FROM orders o 
-            GROUP BY o.order_time::date 
-            ORDER BY total_sales DESC 
-            LIMIT 10
-        `;
-        
-        const result = await pool.query(sql);
-        
-        let html = "<h1>MVP: Peak Sales Days (Live from DB)</h1><ul>";
-        result.rows.forEach(row => {
-            html += `<li>Date: ${row.day.toDateString()} | Sales: $${row.total_sales}</li>`;
-        });
-        html += "</ul><a href='/'>Back to Portal</a>";
-        
-        res.send(html);
-    } 
-    
-    catch (err) {
-        console.error(err);
-        res.status(500).send("Database Error: Check server logs.");
-    }
-});
