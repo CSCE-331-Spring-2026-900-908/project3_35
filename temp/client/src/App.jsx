@@ -133,6 +133,28 @@ export default function App() {
     loadMenu();
   }, []);
 
+  useEffect(() => {
+    if (!selectedItem) {
+      document.body.classList.remove('modal-open');
+      return undefined;
+    }
+
+    function handleEscape(event) {
+      if (event.key === 'Escape') {
+        setSelectedItem(null);
+        setSelection(null);
+      }
+    }
+
+    document.body.classList.add('modal-open');
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.classList.remove('modal-open');
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [selectedItem]);
+
   const categories = useMemo(() => {
     return ['All', ...new Set(menu.map((item) => item.category))];
   }, [menu]);
@@ -210,6 +232,11 @@ export default function App() {
     setCart((current) => current.filter((item) => item.id !== id));
   }
 
+  function closeCustomizer() {
+    setSelectedItem(null);
+    setSelection(null);
+  }
+
   function handleCheckoutChange(event) {
     const { name, value } = event.target;
     setCheckoutForm((current) => ({ ...current, [name]: value }));
@@ -268,24 +295,15 @@ export default function App() {
       <header className="hero">
         <div className="hero__copy">
           <p className="section-tag">Moonwake Tea Atelier</p>
-          <h1>Order bubble tea like a curated tasting, not a spreadsheet.</h1>
+          <h1>Handcrafted bubble tea, made your way.</h1>
           <p>
-            This customer web POS keeps the category and customization strengths of the original cashier
-            system while turning them into a calmer, more accessible ordering experience.
+            Explore signature milk teas, fruit blends, and seasonal specials in a storefront designed
+            to feel like ordering from a modern cafe menu instead of a back-office register.
           </p>
-        </div>
-        <div className="hero__panel">
-          <div className="hero-stat">
-            <span>Vendor</span>
-            <strong>Imaginary, original brand</strong>
-          </div>
-          <div className="hero-stat">
-            <span>Experience</span>
-            <strong>React storefront + Express API</strong>
-          </div>
-          <div className="hero-stat">
-            <span>Backend</span>
-            <strong>PostgreSQL-ready order model</strong>
+          <div className="hero__details">
+            <span>Fresh teas brewed daily</span>
+            <span>Custom sweetness and ice levels</span>
+            <span>Pickup ordering in a few taps</span>
           </div>
         </div>
       </header>
@@ -319,18 +337,6 @@ export default function App() {
           </div>
         </section>
 
-        <CustomizerPanel
-          item={selectedItem}
-          selection={selection}
-          onSelectionChange={updateSelection}
-          onToggleTopping={toggleTopping}
-          onClose={() => {
-            setSelectedItem(null);
-            setSelection(null);
-          }}
-          onAddToCart={addToCart}
-        />
-
         <CartPanel
           cart={cart}
           subtotal={subtotal}
@@ -344,6 +350,17 @@ export default function App() {
           statusMessage={statusMessage}
         />
       </main>
+
+      {selectedItem && selection ? (
+        <CustomizerPanel
+          item={selectedItem}
+          selection={selection}
+          onSelectionChange={updateSelection}
+          onToggleTopping={toggleTopping}
+          onClose={closeCustomizer}
+          onAddToCart={addToCart}
+        />
+      ) : null}
     </div>
   );
 }
