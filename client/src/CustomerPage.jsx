@@ -294,7 +294,7 @@ export default function CustomerPage() {
     <div className="page-shell">
       <header className="hero">
         <div className="hero__copy">
-          <p className="section-tag">Moonwake Tea Atelier</p>
+          <p className="section-tag">Sharetea</p>
           <h1>Handcrafted bubble tea, made your way.</h1>
           <p>
             Explore signature milk teas, fruit blends, and seasonal specials in a storefront designed
