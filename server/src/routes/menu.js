@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { sampleMenu } from '../data/sampleMenu.js';
 
 function normalizeMenuRows(rows) {
   const grouped = new Map();
@@ -50,7 +49,10 @@ export function createMenuRouter(pool) {
 
   router.get('/', async (_request, response) => {
     if (!pool) {
-      return response.json({ source: 'sample', items: sampleMenu });
+      return response.status(503).json({
+        error: 'Database is not configured.',
+        details: 'Menu data must be loaded from PostgreSQL. Set the database environment variables and restart the server.'
+      });
     }
 
     try {
@@ -121,11 +123,10 @@ export function createMenuRouter(pool) {
     } catch (_existingSchemaError) {
     }
 
-    try {
-      return response.json({ source: 'sample-fallback', items: sampleMenu });
-    } catch (error) {
-      return response.json({ source: 'sample-fallback', items: sampleMenu, warning: error.message });
-    }
+    return response.status(500).json({
+      error: 'Failed to load menu data.',
+      details: 'No supported database menu table returned usable rows.'
+    });
   });
 
   return router;
