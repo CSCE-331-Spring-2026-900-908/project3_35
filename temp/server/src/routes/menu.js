@@ -18,6 +18,7 @@ function normalizeMenuRows(rows) {
 
     if (row.topping_name) {
       grouped.get(row.id).toppings.push({
+        id: row.topping_id ? Number(row.topping_id) : undefined,
         name: row.topping_name,
         price: Number(row.topping_price)
       });
@@ -50,6 +51,34 @@ export function createMenuRouter(pool) {
   router.get('/', async (_request, response) => {
     if (!pool) {
       return response.json({ source: 'sample', items: sampleMenu });
+    }
+
+    try {
+      const result = await pool.query(
+        `
+          SELECT
+            mi.id,
+            mi.name,
+            mc.name AS category,
+            mi.description,
+            mi.base_price,
+            tt.id AS topping_id,
+            tt.name AS topping_name,
+            tt.price AS topping_price
+          FROM menu_items mi
+          JOIN menu_categories mc ON mc.id = mi.category_id
+          LEFT JOIN drink_toppings dt ON dt.menu_item_id = mi.id
+          LEFT JOIN topping_types tt ON tt.id = dt.topping_id
+          WHERE mi.is_active = TRUE
+          ORDER BY mc.name, mi.name, tt.name
+        `
+      );
+
+      const items = normalizeMenuRows(result.rows);
+      if (items.length > 0) {
+        return response.json({ source: 'database-menu_items', items });
+      }
+    } catch (_menuItemsError) {
     }
 
     try {
@@ -93,27 +122,7 @@ export function createMenuRouter(pool) {
     }
 
     try {
-      const result = await pool.query(
-        `
-          SELECT
-            mi.id,
-            mi.name,
-            mc.name AS category,
-            mi.description,
-            mi.base_price,
-            tt.name AS topping_name,
-            tt.price AS topping_price
-          FROM menu_items mi
-          JOIN menu_categories mc ON mc.id = mi.category_id
-          LEFT JOIN drink_toppings dt ON dt.menu_item_id = mi.id
-          LEFT JOIN topping_types tt ON tt.id = dt.topping_id
-          WHERE mi.is_active = TRUE
-          ORDER BY mc.name, mi.name, tt.name
-        `
-      );
-
-      const items = normalizeMenuRows(result.rows);
-      return response.json({ source: 'database', items: items.length > 0 ? items : sampleMenu });
+      return response.json({ source: 'sample-fallback', items: sampleMenu });
     } catch (error) {
       return response.json({ source: 'sample-fallback', items: sampleMenu, warning: error.message });
     }
