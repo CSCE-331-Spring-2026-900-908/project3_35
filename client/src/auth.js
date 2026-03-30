@@ -1,3 +1,5 @@
+import { apiUrl } from './apiBase';
+
 const ACCESS_TOKEN_KEY = 'sharetea_access_token';
 const USER_KEY = 'sharetea_user';
 
@@ -34,7 +36,7 @@ export function buildAuthHeaders() {
 }
 
 export async function loginEmployee(credentials) {
-  const response = await fetch('/api/auth/login', {
+  const response = await fetch(apiUrl('/api/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(credentials)
@@ -50,7 +52,7 @@ export async function loginEmployee(credentials) {
 }
 
 export async function fetchCurrentUser() {
-  const response = await fetch('/api/auth/me', {
+  const response = await fetch(apiUrl('/api/auth/me'), {
     headers: {
       ...buildAuthHeaders()
     }
