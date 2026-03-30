@@ -417,3 +417,25 @@ textarea:focus-visible {
     border-radius: 20px;
   }
 }
+
+.language-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.language-picker__label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #6b5b50;
+}
+
+.language-picker__select {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid #d9ccbc;
+  background: #fffaf4;
+  font: inherit;
+  color: #2f211b;
+}
