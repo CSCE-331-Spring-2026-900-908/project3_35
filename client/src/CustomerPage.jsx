@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { apiUrl } from './apiBase';
 import CartPanel from './components/CartPanel';
 import CustomizerPanel from './components/CustomizerPanel';
 import MenuCard from './components/MenuCard';
@@ -117,7 +118,7 @@ export default function CustomerPage() {
   useEffect(() => {
     async function loadMenu() {
       try {
-        const response = await fetch('/api/menu');
+        const response = await fetch(apiUrl('/api/menu'));
         if (!response.ok) {
           throw new Error('Menu request failed');
         }
@@ -259,7 +260,7 @@ export default function CustomerPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/orders', {
+      const response = await fetch(apiUrl('/api/orders'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
