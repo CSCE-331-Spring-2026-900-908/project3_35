@@ -18,7 +18,7 @@ app.use(express.json());
 app.get('/api/health', async (_request, response) => {
   const dbReady = await checkDatabase(pool);
   response.json({
-    service: 'moonwake-web-pos-server',
+    service: 'sharetea-web-pos-server',
     status: 'ok',
     database: dbReady ? 'connected' : 'sample-data-mode'
   });
@@ -29,5 +29,5 @@ app.use('/api/menu', createMenuRouter(pool));
 app.use('/api/orders', createOrdersRouter(pool));
 
 app.listen(port, () => {
-  console.log(`Moonwake API listening on port ${port}`);
+  console.log(`Sharetea API listening on port ${port}`);
 });
