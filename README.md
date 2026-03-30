@@ -47,7 +47,9 @@ Set **`VITE_API_ORIGIN`** in **`client/.env`** to the API base URL (must match `
 npm run dev
 ```
 
-The Vite dev server (default **http://localhost:5173**) proxies **`/api`** to **`VITE_API_ORIGIN`**, so the app can keep using relative paths like `/api/menu`.
+The Vite dev server (default **http://localhost:5173**) proxies **`/api`** to **`VITE_API_ORIGIN`**, so relative API paths work locally.
+
+For **production** (e.g. Vercel), set **`VITE_API_BASE_URL`** to your deployed API origin (no trailing slash), e.g. `https://your-api.vercel.app`. The client prepends this to `/api/...` requests. Add it in the **frontend** project’s environment variables and redeploy. **`VITE_API_ORIGIN` does not affect production builds** (it only configures the dev proxy).
 
 ## Environment variables
 
@@ -56,6 +58,7 @@ The Vite dev server (default **http://localhost:5173**) proxies **`/api`** to **
 | Variable | Description |
 | --- | --- |
 | `VITE_API_ORIGIN` | API base URL used by the **Vite dev proxy** (`/api` → this origin). Example: `http://localhost:3001`. |
+| `VITE_API_BASE_URL` | **Production:** full origin of the deployed API (no trailing slash). Example: `https://your-api.vercel.app`. Leave unset locally so requests use the dev proxy. |
 
 Template: **`client/.env.example`**.
 
