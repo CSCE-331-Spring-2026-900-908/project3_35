@@ -5,6 +5,7 @@ import { checkDatabase, createPool } from './db.js';
 import { createInventoryRouter } from './routes/inventory.js';
 import { createMenuRouter } from './routes/menu.js';
 import { createOrdersRouter } from './routes/orders.js';
+import { createReportsRouter } from './routes/reports.js';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.get('/api/health', async (_request, response) => {
 app.use('/api/inventory', createInventoryRouter(pool));
 app.use('/api/menu', createMenuRouter(pool));
 app.use('/api/orders', createOrdersRouter(pool));
+app.use('/api/reports', createReportsRouter(pool));
 
 app.listen(port, () => {
   console.log(`Sharetea API listening on port ${port}`);
