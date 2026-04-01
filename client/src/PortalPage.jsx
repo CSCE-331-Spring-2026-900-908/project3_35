@@ -4,7 +4,7 @@ export default function PortalPage() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <p style={styles.kicker}>MOONWAKE TEA ATELIER</p>
+        <p style={styles.kicker}>SHARETEA</p>
         <h1 style={styles.title}>Point-of-Sales Portal</h1>
         <p style={styles.subtitle}>
           Select the interface that matches your role in the store.
