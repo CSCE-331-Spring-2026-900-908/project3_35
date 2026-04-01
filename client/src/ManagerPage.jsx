@@ -107,6 +107,7 @@ export default function ManagerPage() {
   const [orders, setOrders] = useState([]);
   const [usageRows, setUsageRows] = useState([]);
   const [xReportRows, setXReportRows] = useState([]);
+  const [activeTab, setActiveTab] = useState('inventory');
 
   const [busy, setBusy] = useState({
     inventory: false,
@@ -265,103 +266,160 @@ export default function ManagerPage() {
       </div>
 
       <div style={styles.grid}>
-        <DataTable
-          title="Inventory Items"
-          rows={inventory}
-          preferredOrder={['item_inventory_id', 'name', 'item_category', 'quantity_available', 'price_per_unit']}
-          formatters={{
-            price_per_unit: (v) => formatMoney(v),
-            quantity_available: (v) => (v === null || v === undefined ? '' : Number(v).toLocaleString())
-          }}
-        />
+        <div style={styles.tabs} role="tablist" aria-label="Manager dashboard tabs">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'inventory'}
+            style={activeTab === 'inventory' ? styles.tabSelected : styles.tab}
+            onClick={() => setActiveTab('inventory')}
+          >
+            Inventory Items
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'orders'}
+            style={activeTab === 'orders' ? styles.tabSelected : styles.tab}
+            onClick={() => setActiveTab('orders')}
+          >
+            Orders
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'reports'}
+            style={activeTab === 'reports' ? styles.tabSelected : styles.tab}
+            onClick={() => setActiveTab('reports')}
+          >
+            Reports
+          </button>
+        </div>
 
-        <DataTable
-          title="Orders (Last 10)"
-          rows={orders}
-          preferredOrder={['id', 'order_id', 'employee_id', 'customer_name', 'total', 'price', 'created_at', 'order_time']}
-          formatters={{
-            total: (v) => formatMoney(v),
-            price: (v) => formatMoney(v)
-          }}
-        />
-
-        <section style={styles.panel}>
-          <div style={styles.panelHeader}>
-            <h2 style={styles.panelTitle}>Reports</h2>
-            <div style={styles.panelMeta}>Usage chart, X-report, Z-report</div>
-          </div>
-
-          <div style={styles.reportSection}>
-            <h3 style={styles.reportTitle}>Inventory Usage (time window)</h3>
-            <div style={styles.formRow}>
-              <label style={styles.label}>
-                Start
-                <input
-                  style={styles.input}
-                  type="datetime-local"
-                  step="1"
-                  value={usageWindow.start}
-                  onChange={(e) => setUsageWindow((c) => ({ ...c, start: e.target.value }))}
-                />
-              </label>
-              <label style={styles.label}>
-                End
-                <input
-                  style={styles.input}
-                  type="datetime-local"
-                  step="1"
-                  value={usageWindow.end}
-                  onChange={(e) => setUsageWindow((c) => ({ ...c, end: e.target.value }))}
-                />
-              </label>
-              <button type="button" style={styles.secondaryButton} onClick={loadUsage} disabled={busy.usage}>
-                {busy.usage ? 'Loading…' : 'Load usage'}
+        {activeTab === 'inventory' ? (
+          <div style={styles.tabBody} role="tabpanel" aria-label="Inventory Items tab">
+            <div style={styles.tabActions}>
+              <button type="button" style={styles.secondaryButton} onClick={loadInventory} disabled={busy.inventory}>
+                {busy.inventory ? 'Loading…' : 'Reload inventory'}
               </button>
             </div>
-
             <DataTable
-              title="Usage Preview"
-              rows={usageRows}
-              preferredOrder={['item_inventory_id', 'ingredient_name', 'total_units_used']}
+              title="Inventory Items"
+              rows={inventory}
+              preferredOrder={['item_inventory_id', 'name', 'item_category', 'quantity_available', 'price_per_unit']}
               formatters={{
-                total_units_used: (v) => (v === null || v === undefined ? '' : Number(v).toLocaleString())
+                price_per_unit: (v) => formatMoney(v),
+                quantity_available: (v) => (v === null || v === undefined ? '' : Number(v).toLocaleString())
               }}
             />
           </div>
+        ) : null}
 
-          <div style={styles.reportSection}>
-            <div style={styles.splitRow}>
-              <div>
-                <h3 style={styles.reportTitle}>X-Report (sales per hour)</h3>
-                <p style={styles.hint}>Loads 24 rows showing hourly order count and sales totals.</p>
-              </div>
-              <button type="button" style={styles.secondaryButton} onClick={loadXReport} disabled={busy.xReport}>
-                {busy.xReport ? 'Loading…' : "Load today's X-Report"}
+        {activeTab === 'orders' ? (
+          <div style={styles.tabBody} role="tabpanel" aria-label="Orders tab">
+            <div style={styles.tabActions}>
+              <button type="button" style={styles.secondaryButton} onClick={loadOrders} disabled={busy.orders}>
+                {busy.orders ? 'Loading…' : 'Reload orders'}
               </button>
             </div>
-
             <DataTable
-              title="X-Report Preview"
-              rows={xReportRows}
-              preferredOrder={['hour', 'order_count', 'total_sales']}
+              title="Orders (Last 10)"
+              rows={orders}
+              preferredOrder={['id', 'order_id', 'employee_id', 'customer_name', 'total', 'price', 'created_at', 'order_time']}
               formatters={{
-                total_sales: (v) => formatMoney(v)
+                total: (v) => formatMoney(v),
+                price: (v) => formatMoney(v)
               }}
             />
           </div>
+        ) : null}
 
-          <div style={styles.reportSection}>
-            <div style={styles.splitRow}>
-              <div>
-                <h3 style={styles.reportTitle}>Z-Report (daily closeout export)</h3>
-                <p style={styles.hint}>Downloads a CSV snapshot of today’s totals.</p>
+        {activeTab === 'reports' ? (
+          <div style={styles.tabBody} role="tabpanel" aria-label="Reports tab">
+            <section style={styles.panel}>
+              <div style={styles.panelHeader}>
+                <h2 style={styles.panelTitle}>Reports</h2>
+                <div style={styles.panelMeta}>Usage chart, X-report, Z-report</div>
               </div>
-              <button type="button" style={styles.dangerButton} onClick={downloadZReportCsv} disabled={busy.zReport}>
-                {busy.zReport ? 'Preparing…' : 'Download Z-Report CSV'}
-              </button>
-            </div>
+
+              <div style={styles.reportSection}>
+                <h3 style={styles.reportTitle}>Inventory Usage (time window)</h3>
+                <div style={styles.formRow}>
+                  <label style={styles.label}>
+                    Start
+                    <input
+                      style={styles.input}
+                      type="datetime-local"
+                      step="1"
+                      value={usageWindow.start}
+                      onChange={(e) => setUsageWindow((c) => ({ ...c, start: e.target.value }))}
+                    />
+                  </label>
+                  <label style={styles.label}>
+                    End
+                    <input
+                      style={styles.input}
+                      type="datetime-local"
+                      step="1"
+                      value={usageWindow.end}
+                      onChange={(e) => setUsageWindow((c) => ({ ...c, end: e.target.value }))}
+                    />
+                  </label>
+                  <button type="button" style={styles.secondaryButton} onClick={loadUsage} disabled={busy.usage}>
+                    {busy.usage ? 'Loading…' : 'Load usage'}
+                  </button>
+                </div>
+
+                <DataTable
+                  title="Usage Preview"
+                  rows={usageRows}
+                  preferredOrder={['item_inventory_id', 'ingredient_name', 'total_units_used']}
+                  formatters={{
+                    total_units_used: (v) => (v === null || v === undefined ? '' : Number(v).toLocaleString())
+                  }}
+                />
+              </div>
+
+              <div style={styles.reportSection}>
+                <div style={styles.splitRow}>
+                  <div>
+                    <h3 style={styles.reportTitle}>X-Report (sales per hour)</h3>
+                    <p style={styles.hint}>Loads 24 rows showing hourly order count and sales totals.</p>
+                  </div>
+                  <button type="button" style={styles.secondaryButton} onClick={loadXReport} disabled={busy.xReport}>
+                    {busy.xReport ? 'Loading…' : "Load today's X-Report"}
+                  </button>
+                </div>
+
+                <DataTable
+                  title="X-Report Preview"
+                  rows={xReportRows}
+                  preferredOrder={['hour', 'order_count', 'total_sales']}
+                  formatters={{
+                    total_sales: (v) => formatMoney(v)
+                  }}
+                />
+              </div>
+
+              <div style={styles.reportSection}>
+                <div style={styles.splitRow}>
+                  <div>
+                    <h3 style={styles.reportTitle}>Z-Report (daily closeout export)</h3>
+                    <p style={styles.hint}>Downloads a CSV snapshot of today’s totals.</p>
+                  </div>
+                  <button
+                    type="button"
+                    style={styles.dangerButton}
+                    onClick={downloadZReportCsv}
+                    disabled={busy.zReport}
+                  >
+                    {busy.zReport ? 'Preparing…' : 'Download Z-Report CSV'}
+                  </button>
+                </div>
+              </div>
+            </section>
           </div>
-        </section>
+        ) : null}
       </div>
 
       <div style={styles.statusBar}>
@@ -552,6 +610,39 @@ const styles = {
     color: '#2f211b',
     textDecoration: 'none',
     fontWeight: 650
+  },
+  tabs: {
+    gridColumn: 'span 12',
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '10px'
+  },
+  tab: {
+    borderRadius: '999px',
+    border: '1px solid #bda99a',
+    padding: '10px 14px',
+    background: '#ffffff',
+    color: '#2f211b',
+    cursor: 'pointer',
+    fontWeight: 700
+  },
+  tabSelected: {
+    borderRadius: '999px',
+    border: '1px solid #6f3c20',
+    padding: '10px 14px',
+    background: '#fff3e6',
+    color: '#6f3c20',
+    cursor: 'pointer',
+    fontWeight: 800
+  },
+  tabBody: {
+    gridColumn: 'span 12'
+  },
+  tabActions: {
+    gridColumn: 'span 12',
+    marginBottom: '10px',
+    display: 'flex',
+    justifyContent: 'flex-end'
   },
   statusBar: {
     maxWidth: '1400px',
