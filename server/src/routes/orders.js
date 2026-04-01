@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authenticateRequest, requireRole } from '../auth.js';
 
 function validateOrder(payload) {
   if (!payload.customerName || !Array.isArray(payload.items) || payload.items.length === 0) {
@@ -301,7 +302,7 @@ async function loadOrderDetailsFromProject3Schema(pool, orderId) {
 export function createOrdersRouter(pool) {
   const router = Router();
 
-  router.get('/', async (request, response) => {
+  router.get('/', authenticateRequest, requireRole('employee', 'manager'), async (request, response) => {
     if (!pool) {
       return response.status(503).json({
         error: 'Database is not configured.',
@@ -328,7 +329,7 @@ export function createOrdersRouter(pool) {
     }
   });
 
-  router.get('/:id', async (request, response) => {
+  router.get('/:id', authenticateRequest, requireRole('employee', 'manager'), async (request, response) => {
     if (!pool) {
       return response.status(503).json({
         error: 'Database is not configured.',

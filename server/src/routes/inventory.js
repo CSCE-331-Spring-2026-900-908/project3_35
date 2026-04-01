@@ -1,7 +1,10 @@
 import { Router } from 'express';
+import { authenticateRequest, requireRole } from '../auth.js';
 
 export function createInventoryRouter(pool) {
   const router = Router();
+
+  router.use(authenticateRequest, requireRole('employee', 'manager'));
 
   router.get('/', async (request, response) => {
     if (!pool) {

@@ -6,81 +6,6 @@ import MenuCard from './components/MenuCard';
 
 const TAX_RATE = 0.0825;
 
-const fallbackMenu = [
-  {
-    id: 1,
-    name: 'Tidal Drift Milk Tea',
-    category: 'Milk Tea',
-    description: 'Black tea with brown sugar pearls and a silky house cream cap.',
-    basePrice: 5.4,
-    toppings: [
-      { name: 'Brown Sugar Boba', price: 0.9 },
-      { name: 'Sea Salt Foam', price: 0.8 },
-      { name: 'Lychee Jelly', price: 0.7 }
-    ]
-  },
-  {
-    id: 2,
-    name: 'Moonlit Mango Green Tea',
-    category: 'Fruit Tea',
-    description: 'Jasmine green tea shaken with mango puree and citrus brightness.',
-    basePrice: 5.7,
-    toppings: [
-      { name: 'Crystal Boba', price: 0.85 },
-      { name: 'Aloe Vera', price: 0.75 },
-      { name: 'Mango Stars', price: 0.95 }
-    ]
-  },
-  {
-    id: 3,
-    name: 'Nebula Strawberry Slush',
-    category: 'Slush',
-    description: 'A frozen strawberry cloud drink finished with popping pearls.',
-    basePrice: 6.1,
-    toppings: [
-      { name: 'Strawberry Poppers', price: 0.95 },
-      { name: 'Whipped Foam', price: 0.8 },
-      { name: 'Rainbow Jelly', price: 0.75 }
-    ]
-  },
-  {
-    id: 4,
-    name: 'Lantern Oolong Peach Tea',
-    category: 'Fruit Tea',
-    description: 'Roasted oolong, white peach syrup, and a bright floral finish.',
-    basePrice: 5.6,
-    toppings: [
-      { name: 'Peach Bits', price: 0.9 },
-      { name: 'Coconut Jelly', price: 0.7 },
-      { name: 'Aloe Vera', price: 0.75 }
-    ]
-  },
-  {
-    id: 5,
-    name: 'Equinox Matcha Tide',
-    category: 'Seasonal',
-    description: 'Ceremonial-style matcha with toasted vanilla milk and oat cream.',
-    basePrice: 6.25,
-    toppings: [
-      { name: 'Red Bean', price: 0.85 },
-      { name: 'Sea Salt Foam', price: 0.8 },
-      { name: 'Crystal Boba', price: 0.85 }
-    ]
-  },
-  {
-    id: 6,
-    name: 'Harbor Thai Velvet',
-    category: 'Milk Tea',
-    description: 'Bold Thai tea layered with condensed milk and amber pearls.',
-    basePrice: 5.95,
-    toppings: [
-      { name: 'Brown Sugar Boba', price: 0.9 },
-      { name: 'Coffee Jelly', price: 0.8 },
-      { name: 'Sea Salt Foam', price: 0.8 }
-    ]
-  }
-];
-
 function buildDefaultSelection(item) {
   return {
     itemId: item.id,
@@ -102,13 +27,14 @@ function calculateTotal(item, selection) {
 }
 
 export default function CustomerPage() {
-  const [menu, setMenu] = useState(fallbackMenu);
+  const [menu, setMenu] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedItem, setSelectedItem] = useState(null);
   const [selection, setSelection] = useState(null);
   const [cart, setCart] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Ready for your next handcrafted drink.');
+  const [menuError, setMenuError] = useState('');
   const [checkoutForm, setCheckoutForm] = useState({
     customerName: '',
     pickupWindow: 'ASAP',
@@ -120,14 +46,24 @@ export default function CustomerPage() {
       try {
         const response = await fetch(apiUrl('/api/menu'));
         if (!response.ok) {
-          throw new Error('Menu request failed');
+          let details = 'Menu request failed';
+          try {
+            const errorPayload = await response.json();
+            details = errorPayload.details || errorPayload.error || details;
+          } catch (_error) {
+          }
+          throw new Error(details);
         }
         const payload = await response.json();
-        if (Array.isArray(payload.items) && payload.items.length > 0) {
-          setMenu(payload.items);
+        if (!Array.isArray(payload.items) || payload.items.length === 0) {
+          throw new Error('No menu items were returned from the database.');
         }
+        setMenu(payload.items);
+        setMenuError('');
       } catch (error) {
-        setStatusMessage('Using sample menu while the backend is unavailable.');
+        setMenu([]);
+        setMenuError(error.message);
+        setStatusMessage('Menu unavailable. Database menu data is required.');
       }
     }
 
@@ -332,9 +268,17 @@ export default function CustomerPage() {
           </div>
 
           <div className="menu-grid">
-            {visibleMenu.map((item) => (
-              <MenuCard key={item.id} item={item} onCustomize={openCustomizer} />
-            ))}
+            {menuError ? (
+              <p className="empty-state">
+                Unable to load menu items from the database: {menuError}
+              </p>
+            ) : visibleMenu.length > 0 ? (
+              visibleMenu.map((item) => (
+                <MenuCard key={item.id} item={item} onCustomize={openCustomizer} />
+              ))
+            ) : (
+              <p className="empty-state">No menu items are currently available from the database.</p>
+            )}
           </div>
         </section>
 

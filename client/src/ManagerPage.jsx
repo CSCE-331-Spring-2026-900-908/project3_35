@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiUrl } from './apiBase';
+import StaffAccessPage from './components/StaffAccessPage';
+import { buildAuthHeaders } from './auth';
 
 function pad2(value) {
   return String(value).padStart(2, '0');
@@ -102,7 +104,7 @@ function DataTable({ title, rows, preferredOrder, formatters }) {
   );
 }
 
-export default function ManagerPage() {
+function ManagerDashboard() {
   const [inventory, setInventory] = useState([]);
   const [orders, setOrders] = useState([]);
   const [usageRows, setUsageRows] = useState([]);
@@ -129,7 +131,11 @@ export default function ManagerPage() {
   });
 
   async function fetchJson(path) {
-    const response = await fetch(apiUrl(path));
+    const response = await fetch(apiUrl(path), {
+      headers: {
+        ...buildAuthHeaders()
+      }
+    });
     let payload = null;
     try {
       payload = await response.json();
@@ -207,7 +213,11 @@ export default function ManagerPage() {
   async function downloadZReportCsv() {
     setBusy((current) => ({ ...current, zReport: true }));
     try {
-      const response = await fetch(apiUrl('/api/reports/z-report?format=csv'));
+      const response = await fetch(apiUrl('/api/reports/z-report?format=csv'), {
+        headers: {
+          ...buildAuthHeaders()
+        }
+      });
       if (!response.ok) {
         let payload = null;
         try {
@@ -656,3 +666,14 @@ const styles = {
     color: '#2f211b'
   }
 };
+export default function ManagerPage() {
+  return (
+    <StaffAccessPage
+      requiredRole="manager"
+      title="Manager Dashboard"
+      description="Managers must sign in before accessing reporting, inventory, and administration tools."
+    >
+      <ManagerDashboard />
+    </StaffAccessPage>
+  );
+}
