@@ -1,0 +1,58 @@
+SPRINT 2 SCRUM 1
+
+
+SCRUM Meeting 1 for Project 3 Sprint 2
+Prepared by: William Adcox
+Meeting Date: 4/1/2026
+
+
+Meeting Attendees:
+1. William Adcox
+2. Benjamin Hardy
+3. Philip Tran
+4. Dong Vo
+
+
+Meeting Agenda Items:
+- Discuss Sprint 1 Deliverables
+- Discuss User Studies Report Deliverable (4/6/2026)
+- Discuss best methods to achieve accessibility
+- Plan a tentative path to accomplish Sprint 2 MVP
+
+
+Status Update Since Last Meeting
+Accomplishments:
+- Selected Personas
+- Submitted GitHub / Written deliverables on time
+- Scheduled remote/in-person attendance for the next 2 weeks
+
+Tasks Completed:
+Machine Translation - Will - No
+GitHub Auto-Synced Release - Dong - Yes
+Sprint 1 Written - Philip/Will - Yes
+UserAuth w.r.t. required email format - Ben - No
+
+
+Before The Next Meeting
+Plans:
+- Begin (and likely finish) User Studies Report
+- Work on Accessibility Features
+- Work on polishing customer page and MVP-ing manager page
+
+Task Assignments:
+Machine Translation - Will
+UserAuth w.r.t. required email format - Ben
+Manager Page - Philip
+Chatbot - Dong
+Customer Page Polishing - Dong/Ben
+
+
+Minutes from Previous Meeting
+We have most items for MVP 1 finished, but we need to work
+more on the Written deliverables. We are planning to work earlier
+on Sprint 2, as the change from Wednesday to Monday deliverables
+caught us off guard. We think that we will address accessibility via
+machine translation, but are unsure of which extra persona to accommodate.
+Features such as the customer page and UserAuth work, but they
+could use some polishing. Customer and Manager pages have yet to be
+implemented.
