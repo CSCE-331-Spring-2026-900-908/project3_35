@@ -6,7 +6,7 @@ function roleLabel(requiredRole) {
   return requiredRole === 'manager' ? 'manager' : 'employee';
 }
 
-export default function StaffAccessPage({ requiredRole, title, description }) {
+export default function StaffAccessPage({ requiredRole, title, description, children }) {
   const [authState, setAuthState] = useState('checking');
   const [user, setUser] = useState(getStoredUser());
   const [form, setForm] = useState({ email: '', password: '' });
@@ -129,35 +129,36 @@ export default function StaffAccessPage({ requiredRole, title, description }) {
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <div style={styles.header}>
-          <div>
-            <p style={styles.kicker}>Authenticated Staff View</p>
-            <h1 style={styles.title}>{title}</h1>
-            <p style={styles.subtitle}>{description}</p>
+    children ?? (
+      <div style={styles.page}>
+        <div style={styles.card}>
+          <div style={styles.header}>
+            <div>
+              <p style={styles.kicker}>Authenticated Staff View</p>
+              <h1 style={styles.title}>{title}</h1>
+              <p style={styles.subtitle}>{description}</p>
+            </div>
+            <div style={styles.userCard}>
+              <strong>{user.firstName} {user.lastName}</strong>
+              <span>{user.jobTitle}</span>
+              <span>{user.email}</span>
+            </div>
           </div>
-          <div style={styles.userCard}>
-            <strong>{user.firstName} {user.lastName}</strong>
-            <span>{user.jobTitle}</span>
-            <span>{user.email}</span>
+
+          <div style={styles.panel}>
+            <h2 style={styles.sectionTitle}>Access granted</h2>
+            <p style={styles.panelText}>
+              JWT-based staff authentication is active for this section.
+            </p>
           </div>
-        </div>
 
-        <div style={styles.panel}>
-          <h2 style={styles.sectionTitle}>Access granted</h2>
-          <p style={styles.panelText}>
-            JWT-based staff authentication is active for this section. You can now build the
-            role-specific tools here knowing the route is protected.
-          </p>
-        </div>
-
-        <div style={styles.actions}>
-          <button style={styles.button} type="button" onClick={handleLogout}>Sign out</button>
-          <Link to="/" style={styles.link}>Return to portal</Link>
+          <div style={styles.actions}>
+            <button style={styles.button} type="button" onClick={handleLogout}>Sign out</button>
+            <Link to="/" style={styles.link}>Return to portal</Link>
+          </div>
         </div>
       </div>
-    </div>
+    )
   );
 }
 
