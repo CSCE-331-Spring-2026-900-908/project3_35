@@ -3,6 +3,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiUrl } from './apiBase';
 import { buildAuthHeaders } from './auth';
+import MenuCard from './components/MenuCard';
+import CartPanel from './components/CartPanel';
+import CustomizerPanel from './components/CustomizerPanel';
+
+app.use('/api/auth', authRoutes);      // Handled by auth.js
+app.use('/api/inventory', inventoryRoutes); // Handled by inventory.js
+app.use('/api/menu', menuRoutes);       // Handled by menu.js
+app.use('/api/orders', orderRoutes);    // Handled by orders.js
+
 
 const TAX_RATE = 0.0825;
 
@@ -14,6 +23,7 @@ function parseApiError(payload) {
   return payload.details || payload.error || null;
 }
 
+// Initialize new drink state
 function buildDefaultSelection(item) {
   return {
     itemId: item.id,
@@ -35,7 +45,7 @@ function calculateTotal(item, selection) {
   return item.basePrice + sizeUpcharge + toppingTotal;
 }
 
-
+// TODO
 function updateSelection(field, value) {
     if (!selectedItem || !selection) {
       return;
@@ -44,7 +54,6 @@ function updateSelection(field, value) {
     next.total = calculateTotal(selectedItem, next);
     setSelection(next);
   }
-
 
 function toggleTopping(name) {
     if (!selectedItem || !selection) {
@@ -71,32 +80,7 @@ async function loadMenu() {
   }
 }
 
-// Submit Order
-async function handleSubmitOrder() {
-  const payload = {
-    customerName: customerName || 'Walk-in',
-    orderType: 'In-Store', // Different from Customer 'Pickup'
-    totals: { subtotal, tax, total },
-    items: cart
-  };
 
-  try {
-    const response = await fetch(apiUrl('/api/orders'), {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        ...buildAuthHeaders() 
-      },
-      body: JSON.stringify(payload)
-    });
-    if (response.ok) {
-      setCart([]); // Clear cart after success
-      alert("Order submitted successfully!");
-    }
-  } catch (error) {
-    alert("Checkout failed: " + error.message);
-  }
-}
 
 // Item cart count
 function updateQuantity(id, delta) {
@@ -105,17 +89,136 @@ function updateQuantity(id, delta) {
   ));
 }
 
+// Add to cart function
+function addToCart() {
+  if (!selectedItem || !selection) return;
+  
+  setCart((current) => [
+    ...current,
+    {
+      id: `${selectedItem.id}-${Date.now()}`, // Unique ID for this specific drink
+      menuItemId: selectedItem.id,
+      name: selectedItem.name,
+      quantity: 1,
+      size: selection.size,
+      sweetness: selection.sweetness,
+      ice: selection.ice,
+      toppings: selection.toppings,
+      total: selection.total
+    }
+  ]);
+  setSelectedItem(null); // Close the popup
+  setSelection(null);
+}
 
-// Main cashier dashboard
+// Main cashier dashboard and variables 
 function cashierDashboard() {
-  // TODO code cashier front end design
-}
+  //code cashier front end design
+  const [menu, setMenu] = useState([]);
+  const [cart, setCart] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [selection, setSelection] = useState(null);
+  const [customerName, setCustomerName] = useState('Walk-in');
 
-// Cashier Webpage Style
-const styles = {
-  // TODO code the react.js website style
-}
+  // Math Calculations
+  const subtotal = useMemo(() => cart.reduce((sum, item) => sum + (item.total * item.quantity), 0), [cart]);
+  const tax = subtotal * TAX_RATE;
+  const total = subtotal + tax;
+  
+  // Add to cart function
+  function addToCart() {
+    if (!selectedItem || !selection) return;
+    
+    setCart((current) => [
+      ...current,
+      {
+        id: `${selectedItem.id}-${Date.now()}`, // Unique ID for this specific drink
+        menuItemId: selectedItem.id,
+        name: selectedItem.name,
+        quantity: 1,
+        size: selection.size,
+        sweetness: selection.sweetness,
+        ice: selection.ice,
+        toppings: selection.toppings,
+        total: selection.total
+      }
+    ]);
+    setSelectedItem(null); // Close the popup
+    setSelection(null);
+  }
 
+  // remove from cart
+  function removeFromCart(id) {
+    setCart((current) => current.filter((item) => item.id !== id));
+  }
+
+  // Submit Order
+  async function handleSubmitOrder() {
+    const payload = {
+      customerName: customerName || 'Walk-in',
+      orderType: 'In-Store',
+      totals: { subtotal, tax, total },
+      items: cart
+    };
+
+    try {
+      const response = await fetch(apiUrl('/api/orders'), {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...buildAuthHeaders() 
+        },
+        body: JSON.stringify(payload)
+      });
+      if (response.ok) {
+        setCart([]); // Clear cart after success
+        alert("Order submitted successfully!");
+      }
+    } catch (error) {
+      alert("Checkout failed: " + error.message);
+    }
+  }
+
+  useEffect(() => {loadMenu();}, []); // Startup
+
+  // UI
+  return (
+    <div className="cashier-layout" style={{ display: 'flex', gap: '20px' }}>
+      {/* Menu Area */}
+      <div className="menu-grid" style={{ flex: 2 }}>
+        {menu.map(item => (
+          <MenuCard 
+            key={item.id} 
+            item={item} 
+            onCustomize={() => openCustomizer(item)} 
+          />
+        ))}
+      </div>
+
+      {/* Cart/Checkout Area */}
+      <div className="cart-sidebar" style={{ flex: 1 }}>
+        <CartPanel 
+          cart={cart} 
+          subtotal={subtotal} 
+          tax={tax} 
+          total={total} 
+          onRemoveItem={removeFromCart}
+          onSubmitOrder={handleSubmitOrder} 
+        />
+      </div>
+
+      {/* Popup for Ice/Sugar/Toppings */}
+      {selectedItem && (
+        <CustomizerPanel 
+          item={selectedItem} 
+          onClose={() => setSelectedItem(null)} 
+          onAddToCart={addToCart} 
+        />
+      )}
+    </div>
+  );
+
+}
 
 export default function CashierPage() {
   return (
@@ -123,6 +226,11 @@ export default function CashierPage() {
       requiredRole="employee"
       title="Cashier Interface"
       description="Staff must sign in before accessing the counter-facing POS experience."
-    />
+    >
+      {/* CRITICAL: This is the "Child" component. 
+         StaffAccessPage will only show this AFTER the user logs in.
+      */}
+      <CashierDashboard /> 
+    </StaffAccessPage>
   );
 }
