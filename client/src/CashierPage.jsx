@@ -1,6 +1,5 @@
 import StaffAccessPage from './components/StaffAccessPage';
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { apiUrl } from './apiBase';
 import { buildAuthHeaders } from './auth';
 import MenuCard from './components/MenuCard';
@@ -22,7 +21,6 @@ function parseApiError(payload) {
   }
   return payload.details || payload.error || null;
 }
-
 // Initialize new drink state
 function buildDefaultSelection(item) {
   return {
@@ -35,7 +33,6 @@ function buildDefaultSelection(item) {
     total: item.basePrice
   };
 }
-
 // calculate subtotal
 function calculateTotal(item, selection) {
   const sizeUpcharge = selection.size === 'Large' ? 0.9 : 0;
@@ -45,27 +42,6 @@ function calculateTotal(item, selection) {
   return item.basePrice + sizeUpcharge + toppingTotal;
 }
 
-// TODO
-function updateSelection(field, value) {
-    if (!selectedItem || !selection) {
-      return;
-    }
-    const next = { ...selection, [field]: value };
-    next.total = calculateTotal(selectedItem, next);
-    setSelection(next);
-  }
-
-function toggleTopping(name) {
-    if (!selectedItem || !selection) {
-      return;
-    }
-    const toppings = selection.toppings.includes(name)
-      ? selection.toppings.filter((item) => item !== name)
-      : [...selection.toppings, name];
-    const next = { ...selection, toppings };
-    next.total = calculateTotal(selectedItem, next);
-    setSelection(next);
-  }
 
 // Load menu from menu backend route
 async function loadMenu() {
@@ -73,43 +49,25 @@ async function loadMenu() {
     const response = await fetch(apiUrl('/api/menu'), {
       headers: { ...buildAuthHeaders() } 
     });
+
     const payload = await response.json();
-    setMenu(payload.items || []); // Assuming your state is named 'menu'
-  } catch (error) {
+
+    if (!response.ok) {
+      const errorDetails = parseApiError(payload) || 'Menu request failed';
+      console.error(errorDetails);
+      return;
+    }
+
+    setMenu(payload.items || []);
+  } 
+  
+  catch (error) {
     console.error("Menu failed to load:", error);
   }
 }
 
 
 
-// Item cart count
-function updateQuantity(id, delta) {
-  setCart(current => current.map(item => 
-    item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-  ));
-}
-
-// Add to cart function
-function addToCart() {
-  if (!selectedItem || !selection) return;
-  
-  setCart((current) => [
-    ...current,
-    {
-      id: `${selectedItem.id}-${Date.now()}`, // Unique ID for this specific drink
-      menuItemId: selectedItem.id,
-      name: selectedItem.name,
-      quantity: 1,
-      size: selection.size,
-      sweetness: selection.sweetness,
-      ice: selection.ice,
-      toppings: selection.toppings,
-      total: selection.total
-    }
-  ]);
-  setSelectedItem(null); // Close the popup
-  setSelection(null);
-}
 
 // Main cashier dashboard and variables 
 function cashierDashboard() {
@@ -125,6 +83,14 @@ function cashierDashboard() {
   const tax = subtotal * TAX_RATE;
   const total = subtotal + tax;
   
+  // Customizer to customize drinks
+  function openCustomizer(item) {
+    const nextSelection = buildDefaultSelection(item);
+    nextSelection.total = calculateTotal(item, nextSelection);
+    setSelectedItem(item);
+    setSelection(nextSelection);
+  }
+
   // Add to cart function
   function addToCart() {
     if (!selectedItem || !selection) return;
@@ -152,6 +118,26 @@ function cashierDashboard() {
     setCart((current) => current.filter((item) => item.id !== id));
   }
 
+  // Toggle Toppings
+  function toggleTopping(name) {
+    if (!selectedItem || !selection) {
+      return;
+    }
+    const toppings = selection.toppings.includes(name)
+      ? selection.toppings.filter((item) => item !== name)
+      : [...selection.toppings, name];
+    const next = { ...selection, toppings };
+    next.total = calculateTotal(selectedItem, next);
+    setSelection(next);
+  }
+
+  // Item cart count
+  function updateQuantity(id, delta) {
+  setCart(current => current.map(item => 
+    item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
+  ));
+}
+
   // Submit Order
   async function handleSubmitOrder() {
     const payload = {
@@ -170,53 +156,74 @@ function cashierDashboard() {
         },
         body: JSON.stringify(payload)
       });
+
+      const payload = await response.json();
+
       if (response.ok) {
         setCart([]); // Clear cart after success
         alert("Order submitted successfully!");
-      }
-    } catch (error) {
-      alert("Checkout failed: " + error.message);
+      } 
+      else {
+      const errorMessage = parseApiError(payload) || `Request failed (${response.status})`;
+      alert("Checkout failed: " + errorMessage);
     }
+  } 
+    catch (error) {
+      alert("Network error: " + error.message);
+  }
+  }
+
+  function updateSelection(field, value) {
+    if (!selectedItem || !selection) {
+      return;
+    }
+    const next = { ...selection, [field]: value };
+    next.total = calculateTotal(selectedItem, next);
+    setSelection(next);
   }
 
   useEffect(() => {loadMenu();}, []); // Startup
 
   // UI
   return (
-    <div className="cashier-layout" style={{ display: 'flex', gap: '20px' }}>
-      {/* Menu Area */}
-      <div className="menu-grid" style={{ flex: 2 }}>
-        {menu.map(item => (
-          <MenuCard 
-            key={item.id} 
-            item={item} 
-            onCustomize={() => openCustomizer(item)} 
-          />
-        ))}
-      </div>
-
-      {/* Cart/Checkout Area */}
-      <div className="cart-sidebar" style={{ flex: 1 }}>
-        <CartPanel 
-          cart={cart} 
-          subtotal={subtotal} 
-          tax={tax} 
-          total={total} 
-          onRemoveItem={removeFromCart}
-          onSubmitOrder={handleSubmitOrder} 
+  <div className="cashier-layout" style={{ display: 'flex', gap: '20px', padding: '20px' }}>
+    {/* Menu Grid */}
+    <div className="menu-grid" style={{ flex: 2 }}>
+      {menu.map(item => (
+        <MenuCard 
+          key={item.id} 
+          item={item} 
+          onCustomize={() => openCustomizer(item)} 
         />
-      </div>
-
-      {/* Popup for Ice/Sugar/Toppings */}
-      {selectedItem && (
-        <CustomizerPanel 
-          item={selectedItem} 
-          onClose={() => setSelectedItem(null)} 
-          onAddToCart={addToCart} 
-        />
-      )}
+      ))}
     </div>
-  );
+
+    {/* Cart Panel */}
+    <div className="cart-sidebar" style={{ flex: 1 }}>
+      <CartPanel 
+        cart={cart} 
+        subtotal={subtotal} 
+        tax={tax} 
+        total={total} 
+        onRemoveItem={removeFromCart}
+        onUpdateQuantity={updateQuantity} 
+        onSubmitOrder={handleSubmitOrder} 
+      />
+    </div>
+
+    {/* Customizer Popup */}
+    {selectedItem && (
+      <CustomizerPanel 
+        item={selectedItem} 
+        selection={selection}
+        onSelectionChange={updateSelection}
+        onToggleTopping={toggleTopping}    
+        onClose={() => setSelectedItem(null)} 
+        onAddToCart={addToCart}             
+      />
+    )}
+  </div>
+);
 
 }
 
@@ -230,7 +237,7 @@ export default function CashierPage() {
       {/* CRITICAL: This is the "Child" component. 
          StaffAccessPage will only show this AFTER the user logs in.
       */}
-      <CashierDashboard /> 
+      <CashierDashboard />
     </StaffAccessPage>
   );
 }
