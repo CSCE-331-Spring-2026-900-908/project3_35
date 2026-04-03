@@ -6,11 +6,6 @@ import MenuCard from './components/MenuCard';
 import CartPanel from './components/CartPanel';
 import CustomizerPanel from './components/CustomizerPanel';
 
-app.use('/api/auth', authRoutes);      // Handled by auth.js
-app.use('/api/inventory', inventoryRoutes); // Handled by inventory.js
-app.use('/api/menu', menuRoutes);       // Handled by menu.js
-app.use('/api/orders', orderRoutes);    // Handled by orders.js
-
 
 const TAX_RATE = 0.0825;
 
