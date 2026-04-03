@@ -156,7 +156,7 @@ function CashierDashboard() {
         'Content-Type': 'application/json',
         ...buildAuthHeaders() 
       },
-      body: JSON.stringify(orderData) 
+      body: JSON.stringify(orderData) // Use the renamed variable here
     });
 
     // Parse the JSON only ONCE
