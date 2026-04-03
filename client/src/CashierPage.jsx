@@ -43,34 +43,13 @@ function calculateTotal(item, selection) {
 }
 
 
-// Load menu from menu backend route
-async function loadMenu() {
-  try {
-    const response = await fetch(apiUrl('/api/menu'), {
-      headers: { ...buildAuthHeaders() } 
-    });
 
-    const payload = await response.json();
-
-    if (!response.ok) {
-      const errorDetails = parseApiError(payload) || 'Menu request failed';
-      console.error(errorDetails);
-      return;
-    }
-
-    setMenu(payload.items || []);
-  } 
-  
-  catch (error) {
-    console.error("Menu failed to load:", error);
-  }
-}
 
 
 
 
 // Main cashier dashboard and variables 
-function cashierDashboard() {
+function CashierDashboard() {
   //code cashier front end design
   const [menu, setMenu] = useState([]);
   const [cart, setCart] = useState([]);
@@ -131,6 +110,29 @@ function cashierDashboard() {
     setSelection(next);
   }
 
+  // Load menu from menu backend route
+  async function loadMenu() {
+  try {
+    const response = await fetch(apiUrl('/api/menu'), {
+      headers: { ...buildAuthHeaders() } 
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      const errorDetails = parseApiError(payload) || 'Menu request failed';
+      console.error(errorDetails);
+      return;
+    }
+
+    setMenu(payload.items || []);
+  } 
+  
+  catch (error) {
+    console.error("Menu failed to load:", error);
+  }
+}
+
   // Item cart count
   function updateQuantity(id, delta) {
   setCart(current => current.map(item => 
@@ -140,38 +142,40 @@ function cashierDashboard() {
 
   // Submit Order
   async function handleSubmitOrder() {
-    const payload = {
-      customerName: customerName || 'Walk-in',
-      orderType: 'In-Store',
-      totals: { subtotal, tax, total },
-      items: cart
-    };
+  const orderData = {
+    customerName: customerName || 'Walk-in',
+    orderType: 'In-Store',
+    totals: { subtotal, tax, total },
+    items: cart
+  };
 
-    try {
-      const response = await fetch(apiUrl('/api/orders'), {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          ...buildAuthHeaders() 
-        },
-        body: JSON.stringify(payload)
-      });
+  try {
+    const response = await fetch(apiUrl('/api/orders'), {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...buildAuthHeaders() 
+      },
+      body: JSON.stringify(orderData) 
+    });
 
-      const payload = await response.json();
+    // Parse the JSON only ONCE
+    const result = await response.json();
 
-      if (response.ok) {
-        setCart([]); // Clear cart after success
-        alert("Order submitted successfully!");
-      } 
-      else {
-      const errorMessage = parseApiError(payload) || `Request failed (${response.status})`;
+    if (response.ok) {
+      setCart([]); // Clear cart after success
+      alert("Order submitted successfully!");
+    } 
+    else {
+      // Use the 'result' variable we just parsed
+      const errorMessage = parseApiError(result) || `Request failed (${response.status})`;
       alert("Checkout failed: " + errorMessage);
     }
   } 
-    catch (error) {
-      alert("Network error: " + error.message);
+  catch (error) {
+    alert("Network error: " + error.message);
   }
-  }
+}
 
   function updateSelection(field, value) {
     if (!selectedItem || !selection) {
