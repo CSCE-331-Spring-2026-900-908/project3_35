@@ -48,6 +48,27 @@ function normalizeRows(payload) {
   return [];
 }
 
+// Drink categories (transfered from project 2)
+const CATEGORIES = ["All", "Milk Tea", "Fruit Tea", "Seasonal", "Slush"];
+
+const FRUIT_KEYWORDS = ["mango", "orange", "peach", "strawberry", "lychee", "passion", "passionfruit", "pineapple", "apple", "grape", "watermelon", "kiwi", "lemon", "lime", "blueberry", "raspberry", "blackberry", "cherry", "coconut", "banana", "melon", "honeydew", "pomelo", "grapefruit", "guava", "dragonfruit", "pomegranate", "fruit"];
+const SEASONAL_KEYWORDS = ["seasonal", "pumpkin", "peppermint", "gingerbread", "holiday", "autumn", "summer", "christmas", "halloween", "valentine's"];
+const SLUSH_KEYWORDS = ["slush", "smoothie", "frozen"];
+const MILK_TEA_KEYWORDS = ["thai", "taro", "matcha", "brown sugar", "classic", "oolong", "jasmine"];
+
+function inferCategory(name) {
+  const lowerName = (name || "").toLowerCase();
+  
+  if (SLUSH_KEYWORDS.some(k => lowerName.includes(k))) return "Slush";
+  if (SEASONAL_KEYWORDS.some(k => lowerName.includes(k))) return "Seasonal";
+  if (FRUIT_KEYWORDS.some(k => lowerName.includes(k))) return "Fruit Tea";
+  if (lowerName.includes("milk") || MILK_TEA_KEYWORDS.some(k => lowerName.includes(k))) return "Milk Tea";
+  
+  return "Milk Tea"; 
+}
+
+
+
 // Main cashier dashboard and variables 
 function CashierDashboard() {
   //code cashier front end design
@@ -55,7 +76,8 @@ function CashierDashboard() {
   const [cart, setCart] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selection, setSelection] = useState(null);
-  const [customerName, setCustomerName] = useState('Walk-in');
+  const [customerName, setCustomerName] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
 
   // Math Calculations
   const subtotal = useMemo(() => cart.reduce((sum, item) => sum + (item.total * item.quantity), 0), [cart]);
@@ -69,6 +91,15 @@ function CashierDashboard() {
     setSelectedItem(item);
     setSelection(nextSelection);
   }
+
+  // Drink Filter (from project 2)
+  const displayedMenu = useMemo(() => {
+    return menu.filter(item => {
+      if (activeCategory === 'All') return true;
+      return inferCategory(item.name) === activeCategory;
+    });
+  }, [menu, activeCategory]);
+
 
   // Add to cart function
   function addToCart() {
@@ -149,7 +180,7 @@ function CashierDashboard() {
   // Submit Order
   async function handleSubmitOrder() {
   const orderData = {
-    customerName: customerName || 'Walk-in',
+    customerName: customerName || '',
     orderType: 'In-Store',
     totals: { subtotal, tax, total },
     items: cart
@@ -198,70 +229,109 @@ function CashierDashboard() {
   return (
     <div className="cashier-layout" style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px', minHeight: '100vh', background: '#efe7dc' }}>
       
-      {/* ADD THIS HEADER SECTION */}
+      {/* HEADER */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <h1 style={{ color: '#2f211b', margin: 0 }}>Cashier Interface</h1>
-        <Link to="/" style={{ 
-          textDecoration: 'none', 
-          padding: '10px 20px', 
-          background: '#fff', 
-          border: '1px solid #6f3c20', 
-          color: '#6f3c20', 
-          borderRadius: '12px',
-          fontWeight: 'bold' 
-        }}>
+        <h1 style={{ color: '#2f211b', margin: 0 }}>POS Terminal</h1>
+        <Link to="/" style={{ textDecoration: 'none', padding: '10px 20px', background: '#fff', border: '1px solid #6f3c20', color: '#6f3c20', borderRadius: '12px', fontWeight: 'bold' }}>
           Back to Portal
         </Link>
       </header>
 
-      <div style={{ display: 'flex', gap: '20px' }}>
-        {/* Menu Grid */}
-        <div className="menu-grid" style={{ flex: 2 }}>
-          {/* If menu is empty, show a loading message instead of a blank screen */}
-          {menu.length === 0 ? (
-            <p style={{color: '#6f3c20'}}>Loading menu items... Check Console (F12) if this persists.</p>
-          ) : (
-            menu.map(item => (
-              <MenuCard 
-                key={item.id} 
-                item={item} 
-                onCustomize={() => openCustomizer(item)} 
-              />
-            ))
-          )}
+      <div style={{ display: 'flex', gap: '20px', flex: 1 }}>
+        
+        {/* LEFT SIDE: CATEGORIES & GRID */}
+        <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          
+          {/* CATEGORY TABS */}
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {CATEGORIES.map(category => (
+              <button
+                key={category}
+                onClick={() => setActiveCategory(category)}
+                style={{
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  border: activeCategory === category ? '2px solid #6f3c20' : '1px solid #bda99a',
+                  background: activeCategory === category ? '#fff3e6' : '#ffffff',
+                  color: activeCategory === category ? '#6f3c20' : '#2f211b',
+                  transition: 'all 0.2s ease-in-out'
+                }}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+
+          {/* DYNAMIC DRINK GRID */}
+          <div className="menu-grid" style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
+            gap: '15px',
+            alignContent: 'start',
+            overflowY: 'auto',
+            maxHeight: 'calc(100vh - 150px)'
+          }}>
+            {menu.length === 0 ? (
+              <p style={{color: '#6f3c20'}}>Loading menu items...</p>
+            ) : displayedMenu.length === 0 ? (
+              <p style={{color: '#6f3c20'}}>No items found in {activeCategory}.</p>
+            ) : (
+              displayedMenu.map(item => (
+                <div 
+                  key={item.id} 
+                  onClick={() => openCustomizer(item)}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #e3d8cb',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    minHeight: '120px'
+                  }}
+                >
+                  <strong style={{ fontSize: '18px', color: '#2f211b', marginBottom: '10px' }}>{item.name}</strong>
+                  <span style={{ fontSize: '16px', color: '#6f3c20' }}>${(Number(item.basePrice) || 0).toFixed(2)}</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
-        {/* Cart Panel */}
-        <div className="cart-sidebar" style={{ flex: 1 }}>
+        {/* RIGHT SIDE: CART PANEL */}
+        <div className="cart-sidebar" style={{ flex: 1, minWidth: '350px' }}>
           <CartPanel 
             cart={cart} 
+            customerName={customerName || ''} 
             subtotal={subtotal} 
             tax={tax} 
             total={total} 
             onRemoveItem={removeFromCart}
-            onSubmitOrder={handleSubmitOrder}
-            
-            
+            onSubmitOrder={handleSubmitOrder} 
             checkoutForm={{
               customerName: customerName,
               pickupWindow: 'ASAP',
               orderType: 'In-Store'
             }}
-            
-            // customer name box
             onCheckoutChange={(e) => {
               if (e.target.name === 'customerName') {
                 setCustomerName(e.target.value);
               }
             }}
-            
             submitting={false} 
             statusMessage=""
           />
         </div>
       </div>
 
-      {/* Customizer Popup */}
+      {/* CUSTOMIZER POPUP */}
       {selectedItem && (
         <CustomizerPanel 
           item={selectedItem} 
@@ -274,7 +344,6 @@ function CashierDashboard() {
       )}
     </div>
   );
-
 }
 
 export default function CashierPage() {
