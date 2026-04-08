@@ -1,10 +1,13 @@
-import StaffAccessPage from './components/StaffAccessPage';
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiUrl } from './apiBase';
 import { buildAuthHeaders } from './auth';
-import MenuCard from './components/MenuCard';
-import CartPanel from './components/CartPanel';
-import CustomizerPanel from './components/CustomizerPanel';
+
+
+import StaffAccessPage from './components/StaffAccessPage.jsx';
+import MenuCard from './components/MenuCard.jsx';
+import CartPanel from './components/CartPanel.jsx';
+import CustomizerPanel from './components/CustomizerPanel.jsx';
 
 
 const TAX_RATE = 0.0825;
@@ -31,17 +34,19 @@ function buildDefaultSelection(item) {
 // calculate subtotal
 function calculateTotal(item, selection) {
   const sizeUpcharge = selection.size === 'Large' ? 0.9 : 0;
-  const toppingTotal = item.toppings
+  const toppingTotal = (item.toppings || [])
     .filter((topping) => selection.toppings.includes(topping.name))
     .reduce((sum, topping) => sum + topping.price, 0);
   return item.basePrice + sizeUpcharge + toppingTotal;
 }
 
-
-
-
-
-
+function normalizeRows(payload) {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload.rows)) return payload.rows;
+  if (Array.isArray(payload.items)) return payload.items;
+  return [];
+}
 
 // Main cashier dashboard and variables 
 function CashierDashboard() {
@@ -85,6 +90,9 @@ function CashierDashboard() {
     ]);
     setSelectedItem(null); // Close the popup
     setSelection(null);
+
+    console.log("Menu State:", menu);
+    console.log("Is SelectedItem open?:", !!selectedItem);
   }
 
   // remove from cart
@@ -109,22 +117,25 @@ function CashierDashboard() {
   async function loadMenu() {
   try {
     const response = await fetch(apiUrl('/api/menu'), {
-      headers: { ...buildAuthHeaders() } 
+      headers: { ...buildAuthHeaders() }
     });
-
     const payload = await response.json();
 
-    if (!response.ok) {
-      const errorDetails = parseApiError(payload) || 'Menu request failed';
-      console.error(errorDetails);
-      return;
-    }
+    if (!response.ok) throw new Error('Failed to load menu');
 
-    setMenu(payload.items || []);
+    // Use the manager's logic to clean the data
+    const items = normalizeRows(payload);
+    
+  
+    setMenu(items.map(item => ({
+      ...item,
+      basePrice: Number(item.basePrice) || 0,
+      toppings: item.toppings || []
+    })));
   } 
   
   catch (error) {
-    console.error("Menu failed to load:", error);
+    console.error("Menu failed:", error);
   }
 }
 
@@ -185,44 +196,84 @@ function CashierDashboard() {
 
   // UI
   return (
-  <div className="cashier-layout" style={{ display: 'flex', gap: '20px', padding: '20px' }}>
-    {/* Menu Grid */}
-    <div className="menu-grid" style={{ flex: 2 }}>
-      {menu.map(item => (
-        <MenuCard 
-          key={item.id} 
-          item={item} 
-          onCustomize={() => openCustomizer(item)} 
+    <div className="cashier-layout" style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px', minHeight: '100vh', background: '#efe7dc' }}>
+      
+      {/* ADD THIS HEADER SECTION */}
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <h1 style={{ color: '#2f211b', margin: 0 }}>Cashier Interface</h1>
+        <Link to="/" style={{ 
+          textDecoration: 'none', 
+          padding: '10px 20px', 
+          background: '#fff', 
+          border: '1px solid #6f3c20', 
+          color: '#6f3c20', 
+          borderRadius: '12px',
+          fontWeight: 'bold' 
+        }}>
+          Back to Portal
+        </Link>
+      </header>
+
+      <div style={{ display: 'flex', gap: '20px' }}>
+        {/* Menu Grid */}
+        <div className="menu-grid" style={{ flex: 2 }}>
+          {/* If menu is empty, show a loading message instead of a blank screen */}
+          {menu.length === 0 ? (
+            <p style={{color: '#6f3c20'}}>Loading menu items... Check Console (F12) if this persists.</p>
+          ) : (
+            menu.map(item => (
+              <MenuCard 
+                key={item.id} 
+                item={item} 
+                onCustomize={() => openCustomizer(item)} 
+              />
+            ))
+          )}
+        </div>
+
+        {/* Cart Panel */}
+        <div className="cart-sidebar" style={{ flex: 1 }}>
+          <CartPanel 
+            cart={cart} 
+            subtotal={subtotal} 
+            tax={tax} 
+            total={total} 
+            onRemoveItem={removeFromCart}
+            onSubmitOrder={handleSubmitOrder}
+            
+            
+            checkoutForm={{
+              customerName: customerName,
+              pickupWindow: 'ASAP',
+              orderType: 'In-Store'
+            }}
+            
+            // customer name box
+            onCheckoutChange={(e) => {
+              if (e.target.name === 'customerName') {
+                setCustomerName(e.target.value);
+              }
+            }}
+            
+            submitting={false} 
+            statusMessage=""
+          />
+        </div>
+      </div>
+
+      {/* Customizer Popup */}
+      {selectedItem && (
+        <CustomizerPanel 
+          item={selectedItem} 
+          selection={selection}
+          onSelectionChange={updateSelection}
+          onToggleTopping={toggleTopping}    
+          onClose={() => setSelectedItem(null)} 
+          onAddToCart={addToCart}             
         />
-      ))}
+      )}
     </div>
-
-    {/* Cart Panel */}
-    <div className="cart-sidebar" style={{ flex: 1 }}>
-      <CartPanel 
-        cart={cart} 
-        subtotal={subtotal} 
-        tax={tax} 
-        total={total} 
-        onRemoveItem={removeFromCart}
-        onUpdateQuantity={updateQuantity} 
-        onSubmitOrder={handleSubmitOrder} 
-      />
-    </div>
-
-    {/* Customizer Popup */}
-    {selectedItem && (
-      <CustomizerPanel 
-        item={selectedItem} 
-        selection={selection}
-        onSelectionChange={updateSelection}
-        onToggleTopping={toggleTopping}    
-        onClose={() => setSelectedItem(null)} 
-        onAddToCart={addToCart}             
-      />
-    )}
-  </div>
-);
+  );
 
 }
 
