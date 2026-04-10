@@ -171,11 +171,11 @@ function CashierDashboard() {
 }
 
   // Item cart count
-  function updateQuantity(id, delta) {
-  setCart(current => current.map(item => 
-    item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-  ));
-}
+//   function updateQuantity(id, delta) {
+//   setCart(current => current.map(item => 
+//     item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
+//   ));
+// }
 
   // Submit Order
   async function handleSubmitOrder() {
@@ -239,10 +239,10 @@ function CashierDashboard() {
 
       <div style={{ display: 'flex', gap: '20px', flex: 1 }}>
         
-        {/* LEFT SIDE: CATEGORIES & GRID */}
+        {/* categories and grid */}
         <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '15px' }}>
           
-          {/* CATEGORY TABS */}
+          {/* drink filter */}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {CATEGORIES.map(category => (
               <button
@@ -265,7 +265,7 @@ function CashierDashboard() {
             ))}
           </div>
 
-          {/* DYNAMIC DRINK GRID */}
+          {/* drink grid */}
           <div className="menu-grid" style={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
@@ -305,33 +305,87 @@ function CashierDashboard() {
           </div>
         </div>
 
-        {/* RIGHT SIDE: CART PANEL */}
-        <div className="cart-sidebar" style={{ flex: 1, minWidth: '350px' }}>
-          <CartPanel 
-            cart={cart} 
-            customerName={customerName || ''} 
-            subtotal={subtotal} 
-            tax={tax} 
-            total={total} 
-            onRemoveItem={removeFromCart}
-            onSubmitOrder={handleSubmitOrder} 
-            checkoutForm={{
-              customerName: customerName,
-              pickupWindow: 'ASAP',
-              orderType: 'In-Store'
-            }}
-            onCheckoutChange={(e) => {
-              if (e.target.name === 'customerName') {
-                setCustomerName(e.target.value);
-              }
-            }}
-            submitting={false} 
-            statusMessage=""
-          />
-        </div>
-      </div>
+        {/* POS order sidebar */}
+        <div style={{ 
+          flex: 1, 
+          minWidth: '350px', 
+          background: '#fff', 
+          borderRadius: '12px', 
+          border: '1px solid #e3d8cb', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          overflow: 'hidden', 
+          boxShadow: '0 4px 6px rgba(0,0,0,0.05)' 
+        }}>
+          {/* header */}
+          <div style={{ background: '#f8f3eb', padding: '20px', borderBottom: '1px solid #e3d8cb' }}>
+            <h2 style={{ margin: 0, color: '#2f211b', fontSize: '22px' }}>Current Order</h2>
+          </div>
 
-      {/* CUSTOMIZER POPUP */}
+          {/* receipt  (scrollable items) */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            {cart.length === 0 ? (
+              <p style={{ color: '#bda99a', textAlign: 'center', marginTop: '40px', fontSize: '18px' }}>Order is empty.</p>
+            ) : (
+              cart.map(item => (
+                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e3d8cb', paddingBottom: '15px' }}>
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ display: 'block', fontSize: '18px', color: '#2f211b' }}>{item.name}</strong>
+                    <span style={{ display: 'block', fontSize: '14px', color: '#6b5b50', marginTop: '4px' }}>
+                      {item.size} • {item.sweetness} • {item.ice}
+                    </span>
+                    {item.toppings && item.toppings.length > 0 && (
+                      <span style={{ display: 'block', fontSize: '14px', color: '#6b5b50' }}>
+                        + {item.toppings.join(', ')}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                    <strong style={{ fontSize: '16px', color: '#2f211b' }}>${item.total.toFixed(2)}</strong>
+                    <button 
+                      onClick={() => removeFromCart(item.id)}
+                      style={{ background: 'transparent', border: 'none', color: '#a33a2b', cursor: 'pointer', fontSize: '14px', padding: 0, marginTop: '8px', fontWeight: 'bold' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Cart buttons */}
+          <div style={{ background: '#f8f3eb', padding: '20px', borderTop: '1px solid #e3d8cb' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#6b5b50' }}>
+              <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', color: '#6b5b50' }}>
+              <span>Tax</span><span>${tax.toFixed(2)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '24px', fontWeight: 'bold', color: '#2f211b' }}>
+              <span>Total</span><span>${total.toFixed(2)}</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                onClick={() => setCart([])} 
+                style={{ flex: 1, padding: '15px', background: '#ffffff', border: '2px solid #a33a2b', color: '#a33a2b', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                Clear
+              </button>
+              <button 
+                onClick={handleSubmitOrder}
+                disabled={cart.length === 0}
+                style={{ flex: 2, padding: '15px', background: cart.length === 0 ? '#bda99a' : '#6f3c20', border: 'none', color: '#fff', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: cart.length === 0 ? 'not-allowed' : 'pointer' }}
+              >
+                Create Order
+              </button>
+            </div>
+          </div>
+        </div>
+      </div> 
+
+      {/*CUSTOMIZER POPUP*/}
       {selectedItem && (
         <CustomizerPanel 
           item={selectedItem} 
