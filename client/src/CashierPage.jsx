@@ -170,13 +170,6 @@ function CashierDashboard() {
   }
 }
 
-  // Item cart count
-//   function updateQuantity(id, delta) {
-//   setCart(current => current.map(item => 
-//     item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-//   ));
-// }
-
   // Submit Order
   async function handleSubmitOrder() {
   const orderData = {
@@ -238,91 +231,144 @@ function CashierDashboard() {
       </header>
 
       <div style={{ display: 'flex', gap: '20px', flex: 1 }}>
-        
-        {/* categories and grid */}
         <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '15px' }}>
           
-          {/* drink filter */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {CATEGORIES.map(category => (
-              <button
-                key={category}
-                onClick={() => setActiveCategory(category)}
-                style={{
-                  padding: '12px 24px',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  border: activeCategory === category ? '2px solid #6f3c20' : '1px solid #bda99a',
-                  background: activeCategory === category ? '#fff3e6' : '#ffffff',
-                  color: activeCategory === category ? '#6f3c20' : '#2f211b',
-                  transition: 'all 0.2s ease-in-out'
-                }}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+          {/* Shows Drinks OR Toppings, never both with a selectedItem variable */}
+          {!selectedItem ? (
+            <>
+              {/* drink filter */}
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                {CATEGORIES.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveCategory(category)}
+                    style={{
+                      padding: '12px 24px', fontSize: '16px', fontWeight: 'bold', borderRadius: '8px', cursor: 'pointer',
+                      border: activeCategory === category ? '2px solid #6f3c20' : '1px solid #bda99a',
+                      background: activeCategory === category ? '#fff3e6' : '#ffffff',
+                      color: activeCategory === category ? '#6f3c20' : '#2f211b',
+                      transition: 'all 0.2s ease-in-out'
+                    }}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
 
-          {/* drink grid */}
-          <div className="menu-grid" style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', 
-            gap: '15px',
-            alignContent: 'start',
-            overflowY: 'auto',
-            maxHeight: 'calc(100vh - 150px)'
-          }}>
-            {menu.length === 0 ? (
-              <p style={{color: '#6f3c20'}}>Loading menu items...</p>
-            ) : displayedMenu.length === 0 ? (
-              <p style={{color: '#6f3c20'}}>No items found in {activeCategory}.</p>
-            ) : (
-              displayedMenu.map(item => (
-                <div 
-                  key={item.id} 
-                  onClick={() => openCustomizer(item)}
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid #e3d8cb',
-                    borderRadius: '12px',
-                    padding: '20px',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: '120px'
-                  }}
-                >
-                  <strong style={{ fontSize: '18px', color: '#2f211b', marginBottom: '10px' }}>{item.name}</strong>
-                  <span style={{ fontSize: '16px', color: '#6f3c20' }}>${(Number(item.basePrice) || 0).toFixed(2)}</span>
+              {/* drink grid */}
+              <div className="menu-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px', alignContent: 'start', overflowY: 'auto', maxHeight: 'calc(100vh - 150px)' }}>
+                {menu.length === 0 ? (
+                  <p style={{color: '#6f3c20'}}>Loading menu items...</p>
+                ) : displayedMenu.length === 0 ? (
+                  <p style={{color: '#6f3c20'}}>No items found in {activeCategory}.</p>
+                ) : (
+                  displayedMenu.map(item => (
+                    <div 
+                      key={item.id} 
+                      onClick={() => openCustomizer(item)}
+                      style={{ background: '#ffffff', border: '1px solid #e3d8cb', borderRadius: '12px', padding: '20px', textAlign: 'center', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '120px' }}
+                    >
+                      <strong style={{ fontSize: '18px', color: '#2f211b', marginBottom: '10px' }}>{item.name}</strong>
+                      <span style={{ fontSize: '16px', color: '#6f3c20' }}>${(Number(item.basePrice) || 0).toFixed(2)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+            
+          ) : (
+            
+            // TOPPINGS CUSTOMIZER GRID ---
+            <div style={{ background: '#f8f3eb', borderRadius: '12px', border: '1px solid #e3d8cb', padding: '20px', display: 'flex', flexDirection: 'column', height: '100%', boxShadow: '0 6px 12px rgba(0,0,0,0.08)' }}>    
+              
+              {/* Customizer Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f8f3eb', paddingBottom: '15px', marginBottom: '15px' }}>
+                <div>
+                  <h2 style={{ margin: 0, color: '#2f211b', fontSize: '28px' }}>{selectedItem.name}</h2>
+                  <span style={{ fontSize: '18px', color: '#6b5b50', fontWeight: 'bold' }}>Current Total: ${selection.total.toFixed(2)}</span>
                 </div>
-              ))
-            )}
-          </div>
+                <button 
+                  onClick={() => { setSelectedItem(null); setSelection(null); }} 
+                  style={{ padding: '12px 24px', background: '#fff', border: '2px solid #a33a2b', color: '#a33a2b', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+              </div>
+
+              {/* Customizer Options */}
+              <div style={{ flex: 1, overflowY: 'auto', paddingRight: '10px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                <div>
+                  <h3 style={{ color: '#2f211b', margin: '0 0 10px 0' }}>Size</h3>
+                  <div style={{ display: 'flex', gap: '15px' }}>
+                    {['Regular', 'Large'].map(size => (
+                      <button key={size} onClick={() => updateSelection('size', size)} style={{ flex: 1, padding: '15px', borderRadius: '8px', border: selection.size === size ? '2px solid #6f3c20' : '1px solid #e3d8cb', background: selection.size === size ? '#fff3e6' : '#fff', color: selection.size === size ? '#6f3c20' : '#2f211b', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' }}>
+                        {size} {size === 'Large' ? '(+$0.90)' : ''}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '20px' }}>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ color: '#2f211b', margin: '0 0 10px 0' }}>Sweetness</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      {['0%', '25%', '50%', '75%', '100%'].map(level => (
+                        <button key={level} onClick={() => updateSelection('sweetness', level)} style={{ padding: '12px', borderRadius: '8px', border: selection.sweetness === level ? '2px solid #6f3c20' : '1px solid #e3d8cb', background: selection.sweetness === level ? '#fff3e6' : '#fff', color: selection.sweetness === level ? '#6f3c20' : '#2f211b', fontWeight: 'bold', cursor: 'pointer' }}>
+                          {level}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ color: '#2f211b', margin: '0 0 10px 0' }}>Ice Level</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      {['No Ice', 'Less Ice', 'Regular Ice', 'Extra Ice'].map(level => (
+                        <button key={level} onClick={() => updateSelection('ice', level)} style={{ padding: '12px', borderRadius: '8px', border: selection.ice === level ? '2px solid #6f3c20' : '1px solid #e3d8cb', background: selection.ice === level ? '#fff3e6' : '#fff', color: selection.ice === level ? '#6f3c20' : '#2f211b', fontWeight: 'bold', cursor: 'pointer' }}>
+                          {level}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 style={{ color: '#2f211b', margin: '0 0 10px 0' }}>Toppings</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' }}>
+                    {(!selectedItem.toppings || selectedItem.toppings.length === 0) ? (
+                      <p style={{ color: '#6b5b50' }}>No toppings mapped for this drink.</p>
+                    ) : (
+                      selectedItem.toppings.map(topping => {
+                        const isSelected = selection.toppings.includes(topping.name);
+                        return (
+                          <button key={topping.name} onClick={() => toggleTopping(topping.name)} style={{ padding: '15px', borderRadius: '12px', border: isSelected ? '3px solid #6f3c20' : '2px solid #e3d8cb', background: isSelected ? '#fff3e6' : '#ffffff', color: isSelected ? '#6f3c20' : '#2f211b', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', transition: 'all 0.1s' }}>
+                            <strong style={{ fontSize: '16px', marginBottom: '5px' }}>{topping.name}</strong>
+                            <span style={{ fontSize: '14px', color: isSelected ? '#6f3c20' : '#6b5b50' }}>+${(Number(topping.price) || 0).toFixed(2)}</span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Add to Cart Button */}
+              <div style={{ paddingTop: '15px', borderTop: '2px solid #f8f3eb', marginTop: '10px' }}>
+                <button onClick={addToCart} style={{ width: '100%', padding: '20px', background: '#6f3c20', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  Add Drink to Cart
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* POS order sidebar */}
-        <div style={{ 
-          flex: 1, 
-          minWidth: '350px', 
-          background: '#fff', 
-          borderRadius: '12px', 
-          border: '1px solid #e3d8cb', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          overflow: 'hidden', 
-          boxShadow: '0 4px 6px rgba(0,0,0,0.05)' 
-        }}>
-          {/* header */}
+        {/* Cart sidebar*/}    
+        <div style={{ flex: 1, minWidth: '350px', background: '#fff', borderRadius: '12px', border: '1px solid #e3d8cb', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+          {/* cart sidebar header */}
           <div style={{ background: '#f8f3eb', padding: '20px', borderBottom: '1px solid #e3d8cb' }}>
             <h2 style={{ margin: 0, color: '#2f211b', fontSize: '22px' }}>Current Order</h2>
           </div>
 
-          {/* receipt  (scrollable items) */}
+          {/* receipt (scrollable items) */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {cart.length === 0 ? (
               <p style={{ color: '#bda99a', textAlign: 'center', marginTop: '40px', fontSize: '18px' }}>Order is empty.</p>
@@ -342,10 +388,7 @@ function CashierDashboard() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                     <strong style={{ fontSize: '16px', color: '#2f211b' }}>${item.total.toFixed(2)}</strong>
-                    <button 
-                      onClick={() => removeFromCart(item.id)}
-                      style={{ background: 'transparent', border: 'none', color: '#a33a2b', cursor: 'pointer', fontSize: '14px', padding: 0, marginTop: '8px', fontWeight: 'bold' }}
-                    >
+                    <button onClick={() => removeFromCart(item.id)} style={{ background: 'transparent', border: 'none', color: '#a33a2b', cursor: 'pointer', fontSize: '14px', padding: 0, marginTop: '8px', fontWeight: 'bold' }}>
                       Remove
                     </button>
                   </div>
@@ -367,35 +410,17 @@ function CashierDashboard() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                onClick={() => setCart([])} 
-                style={{ flex: 1, padding: '15px', background: '#ffffff', border: '2px solid #a33a2b', color: '#a33a2b', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
-              >
+              <button onClick={() => setCart([])} style={{ flex: 1, padding: '15px', background: '#ffffff', border: '2px solid #a33a2b', color: '#a33a2b', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
                 Clear
               </button>
-              <button 
-                onClick={handleSubmitOrder}
-                disabled={cart.length === 0}
-                style={{ flex: 2, padding: '15px', background: cart.length === 0 ? '#bda99a' : '#6f3c20', border: 'none', color: '#fff', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: cart.length === 0 ? 'not-allowed' : 'pointer' }}
-              >
+              <button onClick={handleSubmitOrder} disabled={cart.length === 0} style={{ flex: 2, padding: '15px', background: cart.length === 0 ? '#bda99a' : '#6f3c20', border: 'none', color: '#fff', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: cart.length === 0 ? 'not-allowed' : 'pointer' }}>
                 Create Order
               </button>
             </div>
           </div>
         </div>
-      </div> 
 
-      {/*CUSTOMIZER POPUP*/}
-      {selectedItem && (
-        <CustomizerPanel 
-          item={selectedItem} 
-          selection={selection}
-          onSelectionChange={updateSelection}
-          onToggleTopping={toggleTopping}    
-          onClose={() => setSelectedItem(null)} 
-          onAddToCart={addToCart}             
-        />
-      )}
+      </div> 
     </div>
   );
 }
