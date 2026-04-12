@@ -8,29 +8,39 @@ export default function CartPanel({
   onRemoveItem,
   onSubmitOrder,
   submitting,
-  statusMessage
+  statusMessage,
+  labels
 }) {
   return (
     <aside className="cart-panel" aria-labelledby="cart-title">
       <div className="cart-panel__header">
-        <p className="section-tag">Current Order</p>
-        <h2 id="cart-title">Cart</h2>
+        <p className="section-tag">{labels.currentOrder}</p>
+        <h2 id="cart-title">{labels.cart}</h2>
       </div>
 
       <div className="cart-list" aria-live="polite">
         {cart.length === 0 ? (
-          <p className="empty-state">Your cart is empty. Add a drink to start an order.</p>
+          <p className="empty-state">{labels.emptyCart}</p>
         ) : (
           cart.map((item) => (
             <article key={item.id} className="cart-item">
               <div>
-                <h3>{item.name}</h3>
+                <h3>{item.displayName || item.name}</h3>
                 <p>
-                  {item.size} • {item.sweetness} • {item.ice}
+                  {item.displaySize || item.size} • {item.displaySweetness || item.sweetness} • {item.displayIce || item.ice}
                 </p>
-                {item.toppings.length > 0 ? <p>Toppings: {item.toppings.join(', ')}</p> : null}
-                {item.notes ? <p>Note: {item.notes}</p> : null}
+                {(item.displayToppings || item.toppings).length > 0 ? (
+                  <p>
+                    {labels.toppings}: {(item.displayToppings || item.toppings).join(', ')}
+                  </p>
+                ) : null}
+                {item.notes ? (
+                  <p>
+                    {labels.note}: {item.notes}
+                  </p>
+                ) : null}
               </div>
+
               <div className="cart-item__meta">
                 <strong>${item.total.toFixed(2)}</strong>
                 <button
@@ -38,7 +48,7 @@ export default function CartPanel({
                   className="button button--ghost button--small"
                   onClick={() => onRemoveItem(item.id)}
                 >
-                  Remove
+                  {labels.remove}
                 </button>
               </div>
             </article>
@@ -48,42 +58,55 @@ export default function CartPanel({
 
       <form className="checkout-form" onSubmit={onSubmitOrder}>
         <label>
-          <span>Name</span>
+          <span>{labels.name}</span>
           <input
             name="customerName"
             value={checkoutForm.customerName}
             onChange={onCheckoutChange}
-            placeholder="Customer name"
+            placeholder={labels.customerNamePlaceholder}
             required
           />
         </label>
 
         <label>
-          <span>Pickup Time</span>
+          <span>{labels.pickupTime}</span>
           <select name="pickupWindow" value={checkoutForm.pickupWindow} onChange={onCheckoutChange}>
-            <option value="ASAP">ASAP</option>
-            <option value="10 minutes">10 minutes</option>
-            <option value="20 minutes">20 minutes</option>
-            <option value="30 minutes">30 minutes</option>
+            <option value="ASAP">{labels.asap}</option>
+            <option value="10 minutes">{labels.tenMinutes}</option>
+            <option value="20 minutes">{labels.twentyMinutes}</option>
+            <option value="30 minutes">{labels.thirtyMinutes}</option>
           </select>
         </label>
 
         <label>
-          <span>Order Type</span>
+          <span>{labels.orderType}</span>
           <select name="orderType" value={checkoutForm.orderType} onChange={onCheckoutChange}>
-            <option value="Pickup">Pickup</option>
-            <option value="Dine-In">Dine-In</option>
+            <option value="Pickup">{labels.pickup}</option>
+            <option value="Dine-In">{labels.dineIn}</option>
           </select>
         </label>
 
         <div className="totals">
-          <div><span>Subtotal</span><strong>${subtotal.toFixed(2)}</strong></div>
-          <div><span>Tax</span><strong>${tax.toFixed(2)}</strong></div>
-          <div className="totals__grand"><span>Total</span><strong>${total.toFixed(2)}</strong></div>
+          <div>
+            <span>{labels.subtotal}</span>
+            <strong>${subtotal.toFixed(2)}</strong>
+          </div>
+          <div>
+            <span>{labels.tax}</span>
+            <strong>${tax.toFixed(2)}</strong>
+          </div>
+          <div className="totals__grand">
+            <span>{labels.total}</span>
+            <strong>${total.toFixed(2)}</strong>
+          </div>
         </div>
 
-        <button type="submit" className="button button--primary button--full" disabled={cart.length === 0 || submitting}>
-          {submitting ? 'Submitting Order...' : 'Place Order'}
+        <button
+          type="submit"
+          className="button button--primary button--full"
+          disabled={cart.length === 0 || submitting}
+        >
+          {submitting ? labels.submittingOrder : labels.placeOrder}
         </button>
 
         <p className="status-message" aria-live="polite">
