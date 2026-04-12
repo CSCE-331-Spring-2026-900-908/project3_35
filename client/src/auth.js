@@ -2,6 +2,7 @@ import { apiUrl } from './apiBase';
 
 const ACCESS_TOKEN_KEY = 'sharetea_access_token';
 const USER_KEY = 'sharetea_user';
+const POST_LOGIN_PATH_KEY = 'sharetea_post_login_path';
 
 export function getStoredToken() {
   return window.localStorage.getItem(ACCESS_TOKEN_KEY);
@@ -30,25 +31,53 @@ export function clearSession() {
   window.localStorage.removeItem(USER_KEY);
 }
 
+export function storePostLoginPath(path) {
+  if (!path) {
+    window.sessionStorage.removeItem(POST_LOGIN_PATH_KEY);
+    return;
+  }
+
+  window.sessionStorage.setItem(POST_LOGIN_PATH_KEY, path);
+}
+
+export function consumePostLoginPath() {
+  const path = window.sessionStorage.getItem(POST_LOGIN_PATH_KEY);
+  window.sessionStorage.removeItem(POST_LOGIN_PATH_KEY);
+  return path || null;
+}
+
 export function buildAuthHeaders() {
   const token = getStoredToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function loginEmployee(credentials) {
-  const response = await fetch(apiUrl('/api/auth/login'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(credentials)
-  });
+export function beginGoogleLogin(nextPath = '/') {
+  storePostLoginPath(nextPath);
+  window.location.assign(apiUrl('/api/auth/google/start'));
+}
 
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(payload.details || payload.error || 'Login failed.');
+export function completeGoogleLoginFromHash(hash = window.location.hash) {
+  const params = new URLSearchParams(String(hash || '').replace(/^#/, ''));
+  const error = params.get('error');
+
+  if (error) {
+    throw new Error(error);
   }
 
-  storeSession(payload.accessToken, payload.user);
-  return payload.user;
+  const accessToken = params.get('accessToken');
+  const encodedUser = params.get('user');
+  if (!accessToken || !encodedUser) {
+    throw new Error('Google sign-in did not return a complete session.');
+  }
+
+  const base64 = encodedUser.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = `${base64}${'='.repeat((4 - (base64.length % 4 || 4)) % 4)}`;
+  const binary = window.atob(padded);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  const user = JSON.parse(new TextDecoder().decode(bytes));
+  storeSession(accessToken, user);
+  window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  return user;
 }
 
 export async function fetchCurrentUser() {

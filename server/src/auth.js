@@ -12,7 +12,8 @@ export function deriveRole(jobTitle) {
   return /manager/i.test(jobTitle || '') ? 'manager' : 'employee';
 }
 
-export function signAccessToken(employee) {
+export function signAccessToken(employee, options = {}) {
+  const { payload: extraPayload = {}, ...jwtOptions } = options;
   const payload = {
     sub: String(employee.employeeId),
     employeeId: employee.employeeId,
@@ -20,10 +21,15 @@ export function signAccessToken(employee) {
     firstName: employee.firstName,
     lastName: employee.lastName,
     jobTitle: employee.jobTitle,
-    role: deriveRole(employee.jobTitle)
+    role: deriveRole(employee.jobTitle),
+    ...extraPayload
   };
 
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: '8h' });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '8h', ...jwtOptions });
+}
+
+export function verifyAccessToken(token) {
+  return jwt.verify(token, getJwtSecret());
 }
 
 export function authenticateRequest(request, response, next) {
@@ -39,7 +45,7 @@ export function authenticateRequest(request, response, next) {
   }
 
   try {
-    request.auth = jwt.verify(token, getJwtSecret());
+    request.auth = verifyAccessToken(token);
     return next();
   } catch (_error) {
     return response.status(401).json({ error: 'Invalid or expired token.' });

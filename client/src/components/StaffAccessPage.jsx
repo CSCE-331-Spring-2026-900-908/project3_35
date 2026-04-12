@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { clearSession, fetchCurrentUser, getStoredToken, getStoredUser, loginEmployee } from '../auth';
+import { beginGoogleLogin, clearSession, fetchCurrentUser, getStoredToken, getStoredUser } from '../auth';
 
 function roleLabel(requiredRole) {
   return requiredRole === 'manager' ? 'manager' : 'employee';
@@ -9,9 +9,7 @@ function roleLabel(requiredRole) {
 export default function StaffAccessPage({ requiredRole, title, description, children }) {
   const [authState, setAuthState] = useState('checking');
   const [user, setUser] = useState(getStoredUser());
-  const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const token = getStoredToken();
@@ -31,22 +29,6 @@ export default function StaffAccessPage({ requiredRole, title, description, chil
         setAuthState('signed_out');
       });
   }, []);
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setSubmitting(true);
-    setError('');
-
-    try {
-      const nextUser = await loginEmployee(form);
-      setUser(nextUser);
-      setAuthState('signed_in');
-    } catch (submitError) {
-      setError(submitError.message);
-    } finally {
-      setSubmitting(false);
-    }
-  }
 
   function handleLogout() {
     clearSession();
@@ -77,32 +59,20 @@ export default function StaffAccessPage({ requiredRole, title, description, chil
           <p style={styles.kicker}>Secured Staff Access</p>
           <h1 style={styles.title}>{title}</h1>
           <p style={styles.subtitle}>{description}</p>
-          <form style={styles.form} onSubmit={handleSubmit}>
-            <label style={styles.label}>
-              <span>Email</span>
-              <input
-                style={styles.input}
-                type="text"
-                value={form.email}
-                onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-                required
-              />
-            </label>
-            <label style={styles.label}>
-              <span>Password</span>
-              <input
-                style={styles.input}
-                type="password"
-                value={form.password}
-                onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-                required
-              />
-            </label>
+          <div style={styles.form}>
+            <p style={styles.helperText}>
+              Continue with your staff Google account. That Google email must match an employee record in the
+              backend database.
+            </p>
             {error ? <p style={styles.error}>{error}</p> : null}
-            <button style={styles.button} type="submit" disabled={submitting}>
-              {submitting ? 'Signing in...' : `Sign in as ${roleLabel(requiredRole)}`}
+            <button
+              style={styles.button}
+              type="button"
+              onClick={() => beginGoogleLogin(window.location.pathname)}
+            >
+              Continue with Google for {roleLabel(requiredRole)} access
             </button>
-          </form>
+          </div>
           <Link to="/" style={styles.link}>Back to portal</Link>
         </div>
       </div>
@@ -147,9 +117,7 @@ export default function StaffAccessPage({ requiredRole, title, description, chil
 
           <div style={styles.panel}>
             <h2 style={styles.sectionTitle}>Access granted</h2>
-            <p style={styles.panelText}>
-              JWT-based staff authentication is active for this section.
-            </p>
+            <p style={styles.panelText}>Google OAuth is active for this section, with a server-issued staff session.</p>
           </div>
 
           <div style={styles.actions}>
@@ -209,19 +177,6 @@ const styles = {
     maxWidth: '460px',
     marginTop: '28px'
   },
-  label: {
-    display: 'grid',
-    gap: '8px',
-    color: '#4e3d32',
-    fontWeight: 600
-  },
-  input: {
-    border: '1px solid #dbc9b8',
-    borderRadius: '14px',
-    padding: '12px 14px',
-    fontSize: '1rem',
-    background: '#fff'
-  },
   button: {
     border: 'none',
     borderRadius: '999px',
@@ -242,6 +197,11 @@ const styles = {
     margin: 0,
     color: '#a12f2f',
     fontWeight: 600
+  },
+  helperText: {
+    margin: 0,
+    color: '#5f4a3c',
+    lineHeight: 1.6
   },
   userCard: {
     minWidth: '240px',

@@ -99,6 +99,22 @@ Template: **`client/.env.example`**.
 | `DB_PASSWORD` | If unset, the server runs without a DB pool (health endpoint still works) |
 | `DB_SSL` | Set to `false` to turn off SSL for Postgres |
 | `DEFAULT_EMPLOYEE_ID` | Fallback employee id for orders (default: `1`) |
+| `JWT_SECRET` | Secret used to sign the app's staff session JWTs and OAuth state token |
+| `CLIENT_ORIGIN` | Frontend origin used for Google OAuth callback redirects (default: `http://localhost:5173`) |
+| `GOOGLE_CLIENT_ID` | Google OAuth web client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth web client secret |
+| `GOOGLE_REDIRECT_URI` | Optional explicit Google callback URL. Defaults to `<server-origin>/api/auth/google/callback` |
+
+## Staff authentication
+
+Staff authentication now uses Google OAuth instead of local passwords.
+
+1. Create a Google OAuth web application in Google Cloud.
+2. Add your backend callback URL to the Google app's authorized redirect URIs.
+3. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `JWT_SECRET`, and `CLIENT_ORIGIN` in `server/.env`.
+4. Make sure each staff member signs in with a Google account whose email matches `employee.email` in the database.
+
+After Google sign-in succeeds, the backend exchanges the authorization code, validates the Google identity, matches the employee by email, and issues the app JWT used by the existing protected staff routes.
 
 ## NPM scripts
 
