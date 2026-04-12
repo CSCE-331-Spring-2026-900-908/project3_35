@@ -8,6 +8,7 @@ import { createMenuRouter } from './routes/menu.js';
 import { createOrdersRouter } from './routes/orders.js';
 import { createReportsRouter } from './routes/reports.js';
 import { createTranslateRouter } from './routes/translate.js';
+import { createWeatherRouter } from './routes/weather.js';
 
 dotenv.config();
 
@@ -32,6 +33,8 @@ app.use('/api/inventory', createInventoryRouter(pool));
 app.use('/api/menu', createMenuRouter(pool));
 app.use('/api/orders', createOrdersRouter(pool));
 app.use('/api/reports', createReportsRouter(pool));
+app.use('/api/translate', createTranslateRouter());
+app.use('/api/weather', createWeatherRouter());
 
 app.listen(port, () => {
   console.log(`Sharetea API listening on port ${port}`);
