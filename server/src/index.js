@@ -7,6 +7,7 @@ import { createInventoryRouter } from './routes/inventory.js';
 import { createMenuRouter } from './routes/menu.js';
 import { createOrdersRouter } from './routes/orders.js';
 import { createReportsRouter } from './routes/reports.js';
+import { createTranslateRouter } from './routes/translate.js';
 
 dotenv.config();
 
