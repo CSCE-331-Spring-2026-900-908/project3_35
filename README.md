@@ -76,6 +76,8 @@ The client resolves API calls with `apiUrl()` in **`client/src/apiBase.js`**: em
 
 **`client/vercel.json`** rewrites unknown paths to **`index.html`** so React Router routes work on refresh and direct links. Without this, paths like `/customer` can return **404** from the static host.
 
+This rewrite is also required for the Google OAuth return route at **`/auth/callback`**.
+
 ## Environment variables
 
 ### Client (`client/.env`)
@@ -114,7 +116,26 @@ Staff authentication now uses Google OAuth instead of local passwords.
 3. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `JWT_SECRET`, and `CLIENT_ORIGIN` in `server/.env`.
 4. Make sure each staff member signs in with a Google account whose email matches `employee.email` in the database.
 
-After Google sign-in succeeds, the backend exchanges the authorization code, validates the Google identity, matches the employee by email, and issues the app JWT used by the existing protected staff routes.
+`CLIENT_ORIGIN` should point at the frontend origin that serves the React app, because the backend completes sign-in by redirecting the browser to `${CLIENT_ORIGIN}/auth/callback`.
+
+### Staff sign-in flow
+
+1. A staff member opens a protected page such as `/cashier` or `/manager`.
+2. The client checks for an existing JWT in local storage and verifies it with `GET /api/auth/me`.
+3. If there is no valid session, the sign-in button stores the current page in session storage and sends the browser to `GET /api/auth/google/start`.
+4. The backend redirects to Google with a signed OAuth state token.
+5. Google returns to `GET /api/auth/google/callback`, where the backend validates the state, exchanges the authorization code, verifies the Google ID token, and looks up the employee by email in PostgreSQL.
+6. If the email matches an employee record, the backend derives the staff role from `employee.job_title`, issues an 8-hour app JWT, and redirects the browser to `/auth/callback` on the client with the session payload in the URL hash.
+7. The client callback page stores the token and user in local storage, clears the hash from the address bar, and sends the user back to the page they originally tried to open.
+
+### Auth API behavior
+
+- `POST /api/auth/login` is retired and now returns `410 Gone`.
+- `GET /api/auth/google/start` begins the Google OAuth flow.
+- `GET /api/auth/google/callback` completes Google sign-in and redirects back to the client.
+- `GET /api/auth/me` validates the bearer token and returns the signed-in staff user.
+
+Protected staff API routes still use the existing bearer-token middleware. Employee access allows both `employee` and `manager` roles, while manager-only screens require a `manager` role.
 
 ## NPM scripts
 
