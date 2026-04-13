@@ -98,35 +98,56 @@ export default function StaffAccessPage({ requiredRole, title, description, chil
     );
   }
 
-  return (
-    children ?? (
-      <div style={styles.page}>
-        <div style={styles.card}>
-          <div style={styles.header}>
-            <div>
-              <p style={styles.kicker}>Authenticated Staff View</p>
-              <h1 style={styles.title}>{title}</h1>
-              <p style={styles.subtitle}>{description}</p>
-            </div>
-            <div style={styles.userCard}>
+  if (children) {
+    return (
+      <div>
+        <div style={styles.sessionBar}>
+          <div style={styles.sessionBarInner}>
+            <div style={styles.sessionSummary}>
               <strong>{user.firstName} {user.lastName}</strong>
               <span>{user.jobTitle}</span>
               <span>{user.email}</span>
             </div>
-          </div>
 
-          <div style={styles.panel}>
-            <h2 style={styles.sectionTitle}>Access granted</h2>
-            <p style={styles.panelText}>Google OAuth is active for this section, with a server-issued staff session.</p>
-          </div>
-
-          <div style={styles.actions}>
-            <button style={styles.button} type="button" onClick={handleLogout}>Sign out</button>
-            <Link to="/" style={styles.link}>Return to portal</Link>
+            <div style={styles.sessionActions}>
+              <Link to="/" style={styles.sessionLink}>Portal</Link>
+              <button style={styles.sessionButton} type="button" onClick={handleLogout}>Sign out</button>
+            </div>
           </div>
         </div>
+
+        {children}
       </div>
-    )
+    );
+  }
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.card}>
+        <div style={styles.header}>
+          <div>
+            <p style={styles.kicker}>Authenticated Staff View</p>
+            <h1 style={styles.title}>{title}</h1>
+            <p style={styles.subtitle}>{description}</p>
+          </div>
+          <div style={styles.userCard}>
+            <strong>{user.firstName} {user.lastName}</strong>
+            <span>{user.jobTitle}</span>
+            <span>{user.email}</span>
+          </div>
+        </div>
+
+        <div style={styles.panel}>
+          <h2 style={styles.sectionTitle}>Access granted</h2>
+          <p style={styles.panelText}>Google OAuth is active for this section, with a server-issued staff session.</p>
+        </div>
+
+        <div style={styles.actions}>
+          <button style={styles.button} type="button" onClick={handleLogout}>Sign out</button>
+          <Link to="/" style={styles.link}>Return to portal</Link>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -176,6 +197,51 @@ const styles = {
     gap: '16px',
     maxWidth: '460px',
     marginTop: '28px'
+  },
+  sessionBar: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 20,
+    padding: '12px 20px',
+    background: 'rgba(47, 33, 27, 0.92)',
+    backdropFilter: 'blur(10px)',
+    boxShadow: '0 10px 24px rgba(0, 0, 0, 0.14)'
+  },
+  sessionBarInner: {
+    maxWidth: '1400px',
+    margin: '0 auto',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '16px',
+    flexWrap: 'wrap'
+  },
+  sessionSummary: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap',
+    color: '#fff4e8'
+  },
+  sessionActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap'
+  },
+  sessionLink: {
+    color: '#ffe3cf',
+    textDecoration: 'none',
+    fontWeight: 700
+  },
+  sessionButton: {
+    border: '1px solid rgba(255, 227, 207, 0.5)',
+    borderRadius: '999px',
+    padding: '10px 16px',
+    background: '#fff4e8',
+    color: '#4d2c1b',
+    fontWeight: 700,
+    cursor: 'pointer'
   },
   button: {
     border: 'none',
