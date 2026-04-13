@@ -2,10 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { beginGoogleLogin, clearSession, fetchCurrentUser, getStoredToken, getStoredUser } from '../auth';
 
-function roleLabel(requiredRole) {
-  return requiredRole === 'manager' ? 'manager' : 'employee';
-}
-
 export default function StaffAccessPage({ requiredRole, title, description, children }) {
   const [authState, setAuthState] = useState('checking');
   const [user, setUser] = useState(getStoredUser());
@@ -70,7 +66,27 @@ export default function StaffAccessPage({ requiredRole, title, description, chil
               type="button"
               onClick={() => beginGoogleLogin(window.location.pathname)}
             >
-              Continue with Google for {roleLabel(requiredRole)} access
+              <span style={styles.buttonIcon} aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" role="img" focusable="false">
+                  <path
+                    fill="#EA4335"
+                    d="M12 10.2v3.9h5.4c-.2 1.3-1.5 3.9-5.4 3.9-3.3 0-6-2.8-6-6.1s2.7-6.1 6-6.1c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.1 14.7 2.2 12 2.2c-5.4 0-9.8 4.4-9.8 9.8s4.4 9.8 9.8 9.8c5.7 0 9.5-4 9.5-9.6 0-.6-.1-1.1-.2-1.6H12Z"
+                  />
+                  <path
+                    fill="#4285F4"
+                    d="M3.3 7.4 6.5 9.8C7.4 7.5 9.5 5.9 12 5.9c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.1 14.7 2.2 12 2.2 8.2 2.2 4.9 4.4 3.3 7.4Z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M12 21.8c2.6 0 4.8-.9 6.4-2.5l-3.1-2.4c-.8.5-1.9.9-3.3.9-3.8 0-5.2-2.6-5.4-3.8l-3.1 2.4c1.6 3.1 4.9 5.4 8.5 5.4Z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M3.3 16.6 6.5 14.2c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2L3.3 7.8c-.7 1.3-1.1 2.8-1.1 4.4s.4 3.1 1.1 4.4Z"
+                  />
+                </svg>
+              </span>
+              <span>Login with Google</span>
             </button>
           </div>
           <Link to="/" style={styles.link}>Back to portal</Link>
@@ -244,6 +260,10 @@ const styles = {
     cursor: 'pointer'
   },
   button: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
     border: 'none',
     borderRadius: '999px',
     padding: '12px 18px',
@@ -251,6 +271,15 @@ const styles = {
     color: '#fff',
     fontWeight: 700,
     cursor: 'pointer'
+  },
+  buttonIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '24px',
+    height: '24px',
+    borderRadius: '999px',
+    background: '#ffffff'
   },
   link: {
     display: 'inline-block',
