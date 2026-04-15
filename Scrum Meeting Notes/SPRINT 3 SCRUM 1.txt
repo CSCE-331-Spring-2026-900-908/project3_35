@@ -1,0 +1,67 @@
+TODO LIST:
+- TTS (Accessibility)
+- Chatbot/Personal Assistant
+- Accessibility via Aesthetics
+- Fix Customer to be touchscreen-friendly
+- GPS api implementation (above and beyond feature)
+- Make Cashier/Manager adherent to Project 2 requirements
+- Pin entry for cashier, email OAuth for manager
+
+SPRINT 3 SCRUM 1
+
+
+SCRUM Meeting 1 for Project 3 Sprint 3
+Prepared by: William Adcox
+Meeting Date: 4/15/2026
+
+
+Meeting Attendees:
+1. William Adcox
+2. Benjamin Hardy
+3. Philip Tran
+4. Dong Vo
+
+
+Meeting Agenda Items:
+- Discuss Sprint 2 Deliverables
+- Discuss Mid-Project Presentation Slides (4/20/2026)
+- Discuss how to implement TTS feature
+- Plan a tentative path to finish the final project
+
+
+Status Update Since Last Meeting
+Accomplishments:
+- OAuth / Machine Translation
+- Submitted GitHub / Written deliverables on time
+- Scheduled remote/in-person attendance for final sprint
+
+Tasks Completed:
+Machine Translation - Will - Yes
+OAuth - Ben - Yes
+Sprint 2 Written - Team 35 - Yes
+Manager prototype - Dong - Yes
+Cashier prototype - Philip - Yes
+Swap cashier / customer logic for touchscreen interface - Team 35 - No
+TTS - Team 35 - No
+Chatbot - Dong - No
+Personal identity / stylization - Team 35 - No
+GPS Feature - Ben - No
+
+
+Before The Next Meeting
+Plans:
+- Begin (and likely finish) Mid-Project Presentation Slides
+- Finish TTS / Chatbot
+- Swap customer/cashier for touchscreen modality
+
+Task Assignments:
+Chatbot - Dong
+GPS Feature - Ben
+Logic swap (Cashier/Customer) - Philip
+TTS Prototype - Will
+Manager requirements from Project 2 - Dong
+Site Aesthetics - Team 35
+
+
+Minutes from Previous Meeting
+Sprint 2 base requirements are complete, but we need to work on the Written Materials. The demo works fine, and so we just need to think about polishing what we've already got and work on accessibility features. We have the weather, machine translation, and OAuth requirements completed, so we are just missing the personal chatbot, beyond feature (GPS), and accessibility requirements (TTS, overall site functionality and color scheme).
