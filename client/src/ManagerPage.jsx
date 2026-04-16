@@ -4,6 +4,30 @@ import { apiUrl } from './apiBase';
 import StaffAccessPage from './components/StaffAccessPage';
 import { buildAuthHeaders } from './auth';
 
+const JOB_TITLE_OPTIONS = ['Manager', 'Cashier', 'Barista', 'Shift Lead'];
+const PAYMENT_INFO_OPTIONS = ['Direct Deposit', 'Check', 'Cash', 'N/A'];
+const BENEFITS_OPTIONS = ['None', 'Health', 'Dental', '401k', 'Health, Dental', 'Health, 401k', 'Dental, 401k'];
+const SCHEDULE_OPTIONS = [
+  'Mon-Fri 8am-4pm',
+  'Mon-Fri 09:00-17:00',
+  'Tue-Sat 10am-6pm',
+  'Wed-Sun 12pm-8pm',
+  'Thu-Mon 9am-5pm',
+  'Inactive'
+];
+
+const EMPTY_EMPLOYEE_FORM = {
+  jobTitle: 'Cashier',
+  firstName: '',
+  lastName: '',
+  schedule: 'Mon-Fri 8am-4pm',
+  paymentInfo: 'Direct Deposit',
+  startDate: new Date().toISOString().slice(0, 10),
+  hourlyPay: '',
+  benefits: 'None',
+  email: ''
+};
+
 function pad2(value) {
   return String(value).padStart(2, '0');
 }
@@ -38,6 +62,13 @@ function formatMoney(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return String(value ?? '');
   return n.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+}
+
+function formatDate(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString();
 }
 
 function DataTable({ title, rows, preferredOrder, formatters }) {
@@ -83,7 +114,7 @@ function DataTable({ title, rows, preferredOrder, formatters }) {
               </tr>
             ) : (
               rows.map((row, idx) => (
-                <tr key={row?.id ?? row?.order_id ?? idx}>
+                <tr key={row?.id ?? row?.order_id ?? row?.employee_id ?? idx}>
                   {columns.map((col) => {
                     const raw = row?.[col];
                     const formatter = formatters?.[col];
@@ -104,11 +135,157 @@ function DataTable({ title, rows, preferredOrder, formatters }) {
   );
 }
 
+function EmployeeCreatePanel({ form, onChange, onSubmit, busy }) {
+  return (
+    <section style={styles.panel}>
+      <div style={styles.panelHeader}>
+        <div>
+          <h2 style={styles.panelTitle}>Create Employee</h2>
+          <p style={styles.hint}>
+            Add a new manager, cashier, or other staff member. Their Google sign-in email must match this email.
+          </p>
+        </div>
+        <div style={styles.panelMeta}>Manager-only action</div>
+      </div>
+
+      <form style={styles.employeeFormGrid} onSubmit={onSubmit}>
+        <label style={styles.label}>
+          Job Title
+          <input
+            style={styles.input}
+            list="job-title-options"
+            value={form.jobTitle}
+            onChange={(event) => onChange('jobTitle', event.target.value)}
+            required
+          />
+          <datalist id="job-title-options">
+            {JOB_TITLE_OPTIONS.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </label>
+
+        <label style={styles.label}>
+          First Name
+          <input
+            style={styles.input}
+            value={form.firstName}
+            onChange={(event) => onChange('firstName', event.target.value)}
+            required
+          />
+        </label>
+
+        <label style={styles.label}>
+          Last Name
+          <input
+            style={styles.input}
+            value={form.lastName}
+            onChange={(event) => onChange('lastName', event.target.value)}
+            required
+          />
+        </label>
+
+        <label style={styles.label}>
+          Email
+          <input
+            style={styles.input}
+            type="email"
+            value={form.email}
+            onChange={(event) => onChange('email', event.target.value)}
+            placeholder="employee@company.com"
+            required
+          />
+        </label>
+
+        <label style={styles.label}>
+          Schedule
+          <input
+            style={styles.input}
+            list="schedule-options"
+            value={form.schedule}
+            onChange={(event) => onChange('schedule', event.target.value)}
+            required
+          />
+          <datalist id="schedule-options">
+            {SCHEDULE_OPTIONS.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </label>
+
+        <label style={styles.label}>
+          Payment Info
+          <select
+            style={styles.input}
+            value={form.paymentInfo}
+            onChange={(event) => onChange('paymentInfo', event.target.value)}
+          >
+            {PAYMENT_INFO_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={styles.label}>
+          Start Date
+          <input
+            style={styles.input}
+            type="date"
+            value={form.startDate}
+            onChange={(event) => onChange('startDate', event.target.value)}
+            required
+          />
+        </label>
+
+        <label style={styles.label}>
+          Hourly Pay
+          <input
+            style={styles.input}
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.hourlyPay}
+            onChange={(event) => onChange('hourlyPay', event.target.value)}
+            placeholder="18.50"
+            required
+          />
+        </label>
+
+        <label style={styles.label}>
+          Benefits
+          <input
+            style={styles.input}
+            list="benefits-options"
+            value={form.benefits}
+            onChange={(event) => onChange('benefits', event.target.value)}
+            required
+          />
+          <datalist id="benefits-options">
+            {BENEFITS_OPTIONS.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        </label>
+
+        <div style={styles.formActionsRow}>
+          <button type="submit" style={styles.primaryButton} disabled={busy}>
+            {busy ? 'Creating…' : 'Create employee'}
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
 function ManagerDashboard() {
   const [inventory, setInventory] = useState([]);
   const [orders, setOrders] = useState([]);
   const [usageRows, setUsageRows] = useState([]);
   const [xReportRows, setXReportRows] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [employeeForm, setEmployeeForm] = useState(EMPTY_EMPLOYEE_FORM);
   const [activeTab, setActiveTab] = useState('inventory');
 
   const [busy, setBusy] = useState({
@@ -116,7 +293,9 @@ function ManagerDashboard() {
     orders: false,
     usage: false,
     xReport: false,
-    zReport: false
+    zReport: false,
+    employees: false,
+    employeeCreate: false
   });
 
   const [status, setStatus] = useState('Ready.');
@@ -130,10 +309,13 @@ function ManagerDashboard() {
     };
   });
 
-  async function fetchJson(path) {
+  async function fetchJson(path, options = {}) {
     const response = await fetch(apiUrl(path), {
+      ...options,
       headers: {
-        ...buildAuthHeaders()
+        ...buildAuthHeaders(),
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(options.headers || {})
       }
     });
     let payload = null;
@@ -173,6 +355,19 @@ function ManagerDashboard() {
       setStatus(`Orders load failed: ${error.message}`);
     } finally {
       setBusy((current) => ({ ...current, orders: false }));
+    }
+  }
+
+  async function loadEmployees() {
+    setBusy((current) => ({ ...current, employees: true }));
+    try {
+      const payload = await fetchJson('/api/employees');
+      setEmployees(normalizeRows(payload));
+      setStatus('Loaded employee roster.');
+    } catch (error) {
+      setStatus(`Employee load failed: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, employees: false }));
     }
   }
 
@@ -248,7 +443,56 @@ function ManagerDashboard() {
   }
 
   async function refreshAll() {
-    await Promise.all([loadInventory(), loadOrders()]);
+    await Promise.all([loadInventory(), loadOrders(), loadEmployees()]);
+  }
+
+  function updateEmployeeForm(field, value) {
+    setEmployeeForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  }
+
+  async function handleCreateEmployee(event) {
+    event.preventDefault();
+    setBusy((current) => ({ ...current, employeeCreate: true }));
+
+    try {
+      const payload = await fetchJson('/api/employees', {
+        method: 'POST',
+        body: JSON.stringify({
+          jobTitle: employeeForm.jobTitle,
+          firstName: employeeForm.firstName,
+          lastName: employeeForm.lastName,
+          schedule: employeeForm.schedule,
+          paymentInfo: employeeForm.paymentInfo,
+          startDate: employeeForm.startDate,
+          hourlyPay: employeeForm.hourlyPay,
+          benefits: employeeForm.benefits,
+          email: employeeForm.email
+        })
+      });
+
+      const createdEmployee = payload?.item;
+      setEmployees((current) => {
+        const next = createdEmployee ? [...current, createdEmployee] : current;
+        return next.slice().sort((a, b) => Number(a.employee_id) - Number(b.employee_id));
+      });
+      setEmployeeForm({
+        ...EMPTY_EMPLOYEE_FORM,
+        startDate: new Date().toISOString().slice(0, 10)
+      });
+      setActiveTab('employees');
+      setStatus(
+        createdEmployee
+          ? `Created ${createdEmployee.job_title} account for ${createdEmployee.first_name} ${createdEmployee.last_name}.`
+          : 'Employee created.'
+      );
+    } catch (error) {
+      setStatus(`Employee creation failed: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, employeeCreate: false }));
+    }
   }
 
   useEffect(() => {
@@ -262,7 +506,7 @@ function ManagerDashboard() {
         <div>
           <p style={styles.kicker}>SHARETEA</p>
           <h1 style={styles.title}>Manager Dashboard</h1>
-          <p style={styles.subtitle}>Inventory, recent orders, and daily reporting tools.</p>
+          <p style={styles.subtitle}>Inventory, recent orders, reporting tools, and employee account creation.</p>
         </div>
 
         <div style={styles.headerActions}>
@@ -270,7 +514,7 @@ function ManagerDashboard() {
             Back to portal
           </Link>
           <button type="button" style={styles.primaryButton} onClick={refreshAll}>
-            {busy.inventory || busy.orders ? 'Refreshing…' : 'Refresh'}
+            {busy.inventory || busy.orders || busy.employees ? 'Refreshing…' : 'Refresh'}
           </button>
         </div>
       </div>
@@ -303,6 +547,15 @@ function ManagerDashboard() {
             onClick={() => setActiveTab('reports')}
           >
             Reports
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'employees'}
+            style={activeTab === 'employees' ? styles.tabSelected : styles.tab}
+            onClick={() => setActiveTab('employees')}
+          >
+            Employees
           </button>
         </div>
 
@@ -430,6 +683,42 @@ function ManagerDashboard() {
             </section>
           </div>
         ) : null}
+
+        {activeTab === 'employees' ? (
+          <div style={styles.tabBody} role="tabpanel" aria-label="Employees tab">
+            <div style={styles.tabActionsLeft}>
+              <button type="button" style={styles.secondaryButton} onClick={loadEmployees} disabled={busy.employees}>
+                {busy.employees ? 'Loading…' : 'Reload employees'}
+              </button>
+            </div>
+            <DataTable
+              title="Employee Accounts"
+              rows={employees}
+              preferredOrder={[
+                'employee_id',
+                'job_title',
+                'first_name',
+                'last_name',
+                'schedule',
+                'payment_info',
+                'start_date',
+                'hourly_pay',
+                'benefits',
+                'email'
+              ]}
+              formatters={{
+                start_date: (value) => formatDate(value),
+                hourly_pay: (value) => formatMoney(value)
+              }}
+            />
+            <EmployeeCreatePanel
+              form={employeeForm}
+              onChange={updateEmployeeForm}
+              onSubmit={handleCreateEmployee}
+              busy={busy.employeeCreate}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div style={styles.statusBar}>
@@ -462,7 +751,8 @@ const styles = {
   headerActions: {
     display: 'flex',
     gap: '10px',
-    alignItems: 'center'
+    alignItems: 'center',
+    flexWrap: 'wrap'
   },
   kicker: {
     letterSpacing: '0.12em',
@@ -503,7 +793,8 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'baseline',
     gap: '12px',
-    marginBottom: '12px'
+    marginBottom: '12px',
+    flexWrap: 'wrap'
   },
   panelTitle: {
     margin: 0,
@@ -553,7 +844,7 @@ const styles = {
     fontSize: '1.1rem'
   },
   hint: {
-    margin: '0 0 10px',
+    margin: '6px 0 0',
     color: '#6b5b50'
   },
   formRow: {
@@ -581,9 +872,20 @@ const styles = {
     borderRadius: '12px',
     border: '1px solid #e3d8cb',
     padding: '10px 12px',
-    minWidth: '240px',
+    minWidth: '0',
     background: '#ffffff',
     color: '#2f211b'
+  },
+  employeeFormGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: '14px'
+  },
+  formActionsRow: {
+    gridColumn: '1 / -1',
+    display: 'flex',
+    justifyContent: 'flex-start',
+    paddingTop: '6px'
   },
   primaryButton: {
     borderRadius: '14px',
@@ -654,6 +956,12 @@ const styles = {
     display: 'flex',
     justifyContent: 'flex-end'
   },
+  tabActionsLeft: {
+    gridColumn: 'span 12',
+    marginBottom: '10px',
+    display: 'flex',
+    justifyContent: 'flex-end'
+  },
   statusBar: {
     maxWidth: '1400px',
     margin: '18px auto 0',
@@ -666,6 +974,7 @@ const styles = {
     color: '#2f211b'
   }
 };
+
 export default function ManagerPage() {
   return (
     <StaffAccessPage
