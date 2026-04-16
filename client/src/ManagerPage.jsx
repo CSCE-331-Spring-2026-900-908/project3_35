@@ -981,6 +981,7 @@ export default function ManagerPage() {
       requiredRole="manager"
       title="Manager Dashboard"
       description="Managers must sign in before accessing reporting, inventory, and administration tools."
+      accessDeniedMessage="You do not have access to the manager portal. Please return to the staff portal and sign in with a manager account."
     >
       <ManagerDashboard />
     </StaffAccessPage>

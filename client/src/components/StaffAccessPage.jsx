@@ -2,7 +2,17 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { beginGoogleLogin, clearSession, fetchCurrentUser, getStoredToken, getStoredUser } from '../auth';
 
-export default function StaffAccessPage({ requiredRole, title, description, children }) {
+function roleLabel(requiredRole) {
+  return requiredRole === 'manager' ? 'manager' : 'staff';
+}
+
+export default function StaffAccessPage({
+  requiredRole,
+  title,
+  description,
+  accessDeniedMessage,
+  children
+}) {
   const [authState, setAuthState] = useState('checking');
   const [user, setUser] = useState(getStoredUser());
   const [error, setError] = useState('');
@@ -96,15 +106,14 @@ export default function StaffAccessPage({ requiredRole, title, description, chil
   }
 
   if (!hasRequiredRole) {
+    const fallbackAccessDeniedMessage = `You are signed in as ${user.firstName} ${user.lastName} (${user.jobTitle}), but this page requires ${roleLabel(requiredRole)} access.`;
+
     return (
       <div style={styles.page}>
         <div style={styles.card}>
           <p style={styles.kicker}>Secured Staff Access</p>
           <h1 style={styles.title}>Access restricted</h1>
-          <p style={styles.subtitle}>
-            You are signed in as {user.firstName} {user.lastName} ({user.jobTitle}), but this page
-            requires {roleLabel(requiredRole)} access.
-          </p>
+          <p style={styles.subtitle}>{accessDeniedMessage || fallbackAccessDeniedMessage}</p>
           <div style={styles.actions}>
             <button style={styles.button} type="button" onClick={handleLogout}>Sign out</button>
             <Link to="/" style={styles.link}>Return to portal</Link>
