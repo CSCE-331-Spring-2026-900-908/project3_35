@@ -7,6 +7,12 @@ export default function CartPanel({
   onCheckoutChange,
   onRemoveItem,
   onSubmitOrder,
+  storeLocations,
+  selectedLocation,
+  selectedLocationDistance,
+  onUseMyLocation,
+  locatingUser,
+  mapEmbedUrl,
   submitting,
   statusMessage,
   labels
@@ -85,6 +91,68 @@ export default function CartPanel({
             <option value="Dine-In">{labels.dineIn}</option>
           </select>
         </label>
+
+        <div className="location-picker">
+          <div className="location-picker__header">
+            <div>
+              <span>{labels.chooseLocation}</span>
+              <p className="location-picker__subtitle">{labels.locationSubtitle}</p>
+            </div>
+            <button
+              type="button"
+              className="button button--ghost button--small"
+              onClick={onUseMyLocation}
+              disabled={locatingUser}
+            >
+              {locatingUser ? labels.locating : labels.useMyLocation}
+            </button>
+          </div>
+
+          <div className="location-list" role="radiogroup" aria-label={labels.chooseLocation}>
+            {storeLocations.map((location) => (
+              <label
+                key={location.id}
+                className={`location-card ${checkoutForm.pickupLocationId === location.id ? 'location-card--selected' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="pickupLocationId"
+                  value={location.id}
+                  checked={checkoutForm.pickupLocationId === location.id}
+                  onChange={onCheckoutChange}
+                />
+                <div>
+                  <strong>{location.name}</strong>
+                  <p>{location.address}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          {selectedLocation ? (
+            <div className="location-details">
+              <div className="location-details__text">
+                <strong>{labels.selectedLocation}</strong>
+                <p>{selectedLocation.name}</p>
+                <p>{selectedLocation.address}</p>
+                <p>
+                  {selectedLocationDistance
+                    ? (labels.distanceAway || '{distance} miles away').replace('{distance}', selectedLocationDistance)
+                    : labels.locationUnavailable}
+                </p>
+              </div>
+              {mapEmbedUrl ? (
+                <iframe
+                  title={`${selectedLocation.name} map`}
+                  className="location-map"
+                  src={mapEmbedUrl}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              ) : null}
+            </div>
+          ) : null}
+        </div>
 
         <div className="totals">
           <div>

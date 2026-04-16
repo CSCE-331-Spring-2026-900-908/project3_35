@@ -35,6 +35,14 @@ const baseText = {
   orderType: 'Order Type',
   pickup: 'Pickup',
   dineIn: 'Dine-In',
+  chooseLocation: 'Choose Location',
+  locationSubtitle: 'Select the store where you want to pick up your order.',
+  useMyLocation: 'Use My Location',
+  locating: 'Finding your location...',
+  distanceAway: '{distance} miles away',
+  locationPermissionError: 'We could not access your location. Please allow GPS access and try again.',
+  locationUnavailable: 'Distance will appear after you share your location.',
+  selectedLocation: 'Selected Location',
   subtotal: 'Subtotal',
   tax: 'Tax',
   total: 'Total',
@@ -56,6 +64,30 @@ const baseText = {
   addedToCart: '{itemName} added to cart.',
   orderFailed: 'Order could not be submitted: {message}'
 };
+
+const STORE_LOCATIONS = [
+  {
+    id: 'northgate',
+    name: 'Moonwake Tea Atelier - Northgate',
+    address: '201 University Dr, College Station, TX 77840',
+    lat: 30.62498,
+    lon: -96.34079
+  },
+  {
+    id: 'tower-point',
+    name: 'Moonwake Tea Atelier - Tower Point',
+    address: '15960 Texas 6, College Station, TX 77845',
+    lat: 30.56173,
+    lon: -96.28016
+  },
+  {
+    id: 'bryan',
+    name: 'Moonwake Tea Atelier - Bryan',
+    address: '1801 Briarcrest Dr, Bryan, TX 77802',
+    lat: 30.65545,
+    lon: -96.34154
+  }
+];
 
 const fallbackMenu = [
   {
@@ -205,6 +237,42 @@ function withDisplayFields(menu) {
   }));
 }
 
+function toRadians(value) {
+  return (value * Math.PI) / 180;
+}
+
+function calculateDistanceMiles(origin, destination) {
+  if (!origin || !destination) {
+    return null;
+  }
+
+  const earthRadiusMiles = 3958.8;
+  const dLat = toRadians(destination.lat - origin.lat);
+  const dLon = toRadians(destination.lon - origin.lon);
+  const lat1 = toRadians(origin.lat);
+  const lat2 = toRadians(destination.lat);
+
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return earthRadiusMiles * c;
+}
+
+function buildMapEmbedUrl(location) {
+  if (!location) {
+    return '';
+  }
+
+  const delta = 0.03;
+  const left = location.lon - delta;
+  const right = location.lon + delta;
+  const top = location.lat + delta;
+  const bottom = location.lat - delta;
+
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${left}%2C${bottom}%2C${right}%2C${top}&layer=mapnik&marker=${location.lat}%2C${location.lon}`;
+}
+
 export default function CustomerPage() {
   const [menu, setMenu] = useState(normalizeMenu(fallbackMenu));
   const [translatedMenu, setTranslatedMenu] = useState(withDisplayFields(normalizeMenu(fallbackMenu)));
@@ -217,10 +285,23 @@ export default function CustomerPage() {
   const [checkoutForm, setCheckoutForm] = useState({
     customerName: '',
     pickupWindow: 'ASAP',
-    orderType: 'Pickup'
+    orderType: 'Pickup',
+    pickupLocationId: STORE_LOCATIONS[0].id
   });
   const [language, setLanguage] = useState('en');
   const [translatedText, setTranslatedText] = useState(baseText);
+  const [userCoordinates, setUserCoordinates] = useState(null);
+  const [locatingUser, setLocatingUser] = useState(false);
+
+  const selectedLocation = useMemo(
+    () => STORE_LOCATIONS.find((location) => location.id === checkoutForm.pickupLocationId) || STORE_LOCATIONS[0],
+    [checkoutForm.pickupLocationId]
+  );
+
+  const selectedLocationDistance = useMemo(() => {
+    const distance = calculateDistanceMiles(userCoordinates, selectedLocation);
+    return distance === null ? null : distance.toFixed(1);
+  }, [selectedLocation, userCoordinates]);
 
   async function translateTexts(texts, targetLanguage) {
     if (!Array.isArray(texts) || texts.length === 0) {
@@ -614,6 +695,49 @@ export default function CustomerPage() {
     setCheckoutForm((current) => ({ ...current, [name]: value }));
   }
 
+  function requestUserLocation() {
+    if (!navigator.geolocation) {
+      setStatusMessage(translatedText.locationPermissionError);
+      return;
+    }
+
+    setLocatingUser(true);
+    setStatusMessage(translatedText.locating || 'Finding your location...');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserCoordinates({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude
+        });
+        setLocatingUser(false);
+        const distanceText = calculateDistanceMiles(
+          { lat: position.coords.latitude, lon: position.coords.longitude },
+          selectedLocation
+        );
+        if (distanceText === null) {
+          setStatusMessage(translatedText.statusReady);
+          return;
+        }
+        setStatusMessage(
+          `${selectedLocation.name} • ${(translatedText.distanceAway || '{distance} miles away').replace(
+            '{distance}',
+            distanceText.toFixed(1)
+          )}`
+        );
+      },
+      () => {
+        setLocatingUser(false);
+        setStatusMessage(translatedText.locationPermissionError);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000
+      }
+    );
+  }
+
   async function handleSubmitOrder(event) {
     event.preventDefault();
 
@@ -625,6 +749,9 @@ export default function CustomerPage() {
       customerName: checkoutForm.customerName,
       pickupWindow: checkoutForm.pickupWindow,
       orderType: checkoutForm.orderType,
+      pickupLocationId: checkoutForm.pickupLocationId,
+      pickupLocationName: selectedLocation.name,
+      pickupLocationAddress: selectedLocation.address,
       totals: { subtotal, tax, total },
       items: cart.map((item) => ({
         id: item.id,
@@ -669,7 +796,8 @@ export default function CustomerPage() {
       setCheckoutForm({
         customerName: '',
         pickupWindow: 'ASAP',
-        orderType: 'Pickup'
+        orderType: 'Pickup',
+        pickupLocationId: STORE_LOCATIONS[0].id
       });
       setStatusMessage(
         (translatedText.orderConfirmed || 'Order confirmed. Ticket {orderNumber} is in progress.')
@@ -777,6 +905,12 @@ export default function CustomerPage() {
           onCheckoutChange={handleCheckoutChange}
           onRemoveItem={removeCartItem}
           onSubmitOrder={handleSubmitOrder}
+          storeLocations={STORE_LOCATIONS}
+          selectedLocation={selectedLocation}
+          selectedLocationDistance={selectedLocationDistance}
+          onUseMyLocation={requestUserLocation}
+          locatingUser={locatingUser}
+          mapEmbedUrl={buildMapEmbedUrl(selectedLocation)}
           submitting={submitting}
           statusMessage={statusMessage}
           labels={translatedText}
