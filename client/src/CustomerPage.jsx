@@ -3,6 +3,9 @@ import CartPanel from './components/CartPanel';
 import CustomizerPanel from './components/CustomizerPanel';
 import MenuCard from './components/MenuCard';
 import { apiUrl } from './apiBase';
+import micOff from './assets/mic_off.png';
+import micOn from './assets/mic_on.png';
+import './styles.css';
 
 const TAX_RATE = 0.0825;
 
@@ -18,6 +21,9 @@ const baseText = {
   statusReady: 'Ready for your next handcrafted drink.',
   statusFallback: 'Using sample menu while the backend is unavailable.',
   languageLabel: 'Language',
+  ttsLabel: 'Text-to-Speech',
+  ttsOn: 'TTS On',
+  ttsOff: 'TTS Off',
   customize: 'Customize',
   currentOrder: 'Current Order',
   cart: 'Cart',
@@ -221,6 +227,7 @@ export default function CustomerPage() {
   });
   const [language, setLanguage] = useState('en');
   const [translatedText, setTranslatedText] = useState(baseText);
+  const [ttsEnabled, setTtsEnabled] = useState(false);
 
   async function translateTexts(texts, targetLanguage) {
     if (!Array.isArray(texts) || texts.length === 0) {
@@ -240,6 +247,14 @@ export default function CustomerPage() {
     }
 
     return Array.isArray(data.translations) ? data.translations : [];
+  }
+
+  function handleTtsToggle() {
+    setTtsEnabled((current) => {
+      const next = !current;
+      setStatusMessage(next ? 'Text-to-speech enabled.' : 'Text-to-speech disabled.');
+      return next;
+    });
   }
 
   function getTranslatedCategory(category) {
@@ -705,21 +720,44 @@ export default function CustomerPage() {
         <div className="hero__copy">
           <p className="section-tag">Moonwake Tea Atelier</p>
 
-          <div className="language-picker">
-            <label htmlFor="language-select" className="language-picker__label">
-              {translatedText.languageLabel}
-            </label>
-            <select
-              id="language-select"
-              className="language-picker__select"
-              value={language}
-              onChange={(event) => setLanguage(event.target.value)}
-            >
-              <option value="en">English</option>
-              <option value="es">Español</option>
-              <option value="zh-CN">简体中文</option>
-              <option value="ko">한국어</option>
-            </select>
+          <div className="hero__controls">
+            <div className="language-picker">
+              <label htmlFor="language-select" className="language-picker__label">
+                {translatedText.languageLabel}
+              </label>
+              <select
+                id="language-select"
+                className="language-picker__select"
+                value={language}
+                onChange={(event) => setLanguage(event.target.value)}
+              >
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="ko">한국어</option>
+              </select>
+            </div>
+
+            <div className="tts-toggle-wrap">
+              <span className="tts-toggle-wrap__label">{translatedText.ttsLabel}</span>
+              <button
+                type="button"
+                className={`tts-toggle ${ttsEnabled ? 'tts-toggle--on' : 'tts-toggle--off'}`}
+                onClick={handleTtsToggle}
+                aria-pressed={ttsEnabled}
+                aria-label={ttsEnabled ? 'Turn text to speech off' : 'Turn text to speech on'}
+                title={ttsEnabled ? translatedText.ttsOn : translatedText.ttsOff}
+              >
+                <img
+                  src={ttsEnabled ? micOn : micOff}
+                  alt=""
+                  className="tts-toggle__icon"
+                />
+                <span className="tts-toggle__text">
+                  {ttsEnabled ? translatedText.ttsOn : translatedText.ttsOff}
+                </span>
+              </button>
+            </div>
           </div>
 
           <h1>{translatedText.heroTitle}</h1>
