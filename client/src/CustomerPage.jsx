@@ -43,6 +43,14 @@ const baseText = {
   locationPermissionError: 'We could not access your location. Please allow GPS access and try again.',
   locationUnavailable: 'Distance will appear after you share your location.',
   selectedLocation: 'Selected Location',
+  directions: 'Directions',
+  directionsLoading: 'Loading in-app directions...',
+  directionsLocationHint: 'Share your location to load directions inside the app.',
+  routeSummary: '{distance} mi • about {duration} min',
+  stepMeta: '{distance} mi • {duration} min',
+  routeToStore: 'Route to Store',
+  startLabel: 'You',
+  destinationLabel: 'Store',
   subtotal: 'Subtotal',
   tax: 'Tax',
   total: 'Total',
@@ -259,20 +267,6 @@ function calculateDistanceMiles(origin, destination) {
   return earthRadiusMiles * c;
 }
 
-function buildMapEmbedUrl(location) {
-  if (!location) {
-    return '';
-  }
-
-  const delta = 0.03;
-  const left = location.lon - delta;
-  const right = location.lon + delta;
-  const top = location.lat + delta;
-  const bottom = location.lat - delta;
-
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${left}%2C${bottom}%2C${right}%2C${top}&layer=mapnik&marker=${location.lat}%2C${location.lon}`;
-}
-
 export default function CustomerPage() {
   const [menu, setMenu] = useState(normalizeMenu(fallbackMenu));
   const [translatedMenu, setTranslatedMenu] = useState(withDisplayFields(normalizeMenu(fallbackMenu)));
@@ -292,6 +286,13 @@ export default function CustomerPage() {
   const [translatedText, setTranslatedText] = useState(baseText);
   const [userCoordinates, setUserCoordinates] = useState(null);
   const [locatingUser, setLocatingUser] = useState(false);
+  const [directions, setDirections] = useState({
+    loading: false,
+    error: '',
+    summary: null,
+    steps: [],
+    routeCoordinates: []
+  });
 
   const selectedLocation = useMemo(
     () => STORE_LOCATIONS.find((location) => location.id === checkoutForm.pickupLocationId) || STORE_LOCATIONS[0],
@@ -301,6 +302,72 @@ export default function CustomerPage() {
   const selectedLocationDistance = useMemo(() => {
     const distance = calculateDistanceMiles(userCoordinates, selectedLocation);
     return distance === null ? null : distance.toFixed(1);
+  }, [selectedLocation, userCoordinates]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDirections() {
+      if (!selectedLocation || !userCoordinates) {
+        setDirections({
+          loading: false,
+          error: '',
+          summary: null,
+          steps: [],
+          routeCoordinates: []
+        });
+        return;
+      }
+
+      setDirections((current) => ({
+        ...current,
+        loading: true,
+        error: ''
+      }));
+
+      try {
+        const response = await fetch(apiUrl('/api/directions'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            origin: userCoordinates,
+            destination: selectedLocation
+          })
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || 'Directions failed.');
+        }
+
+        if (!cancelled) {
+          setDirections({
+            loading: false,
+            error: '',
+            summary: payload.summary || null,
+            steps: Array.isArray(payload.steps) ? payload.steps : [],
+            routeCoordinates: Array.isArray(payload.routeCoordinates) ? payload.routeCoordinates : []
+          });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setDirections({
+            loading: false,
+            error: error.message || 'Directions are unavailable right now.',
+            summary: null,
+            steps: [],
+            routeCoordinates: []
+          });
+        }
+      }
+    }
+
+    loadDirections();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedLocation, userCoordinates]);
 
   async function translateTexts(texts, targetLanguage) {
@@ -910,7 +977,12 @@ export default function CustomerPage() {
           selectedLocationDistance={selectedLocationDistance}
           onUseMyLocation={requestUserLocation}
           locatingUser={locatingUser}
-          mapEmbedUrl={buildMapEmbedUrl(selectedLocation)}
+          userCoordinates={userCoordinates}
+          routeCoordinates={directions.routeCoordinates}
+          directionsSummary={directions.summary}
+          directionsSteps={directions.steps}
+          directionsLoading={directions.loading}
+          directionsError={directions.error}
           submitting={submitting}
           statusMessage={statusMessage}
           labels={translatedText}

@@ -1,3 +1,21 @@
+import LocationMap from './LocationMap';
+
+function formatRouteSummary(summary, labels) {
+  if (!summary) {
+    return '';
+  }
+
+  return (labels.routeSummary || '{distance} mi • about {duration} min')
+    .replace('{distance}', Number(summary.distanceMiles || 0).toFixed(1))
+    .replace('{duration}', String(summary.durationMinutes || 0));
+}
+
+function formatStepMeta(step, labels) {
+  return (labels.stepMeta || '{distance} mi • {duration} min')
+    .replace('{distance}', Number(step.distanceMiles || 0).toFixed(1))
+    .replace('{duration}', String(step.durationMinutes || 0));
+}
+
 export default function CartPanel({
   cart,
   subtotal,
@@ -12,7 +30,12 @@ export default function CartPanel({
   selectedLocationDistance,
   onUseMyLocation,
   locatingUser,
-  mapEmbedUrl,
+  userCoordinates,
+  routeCoordinates,
+  directionsSummary,
+  directionsSteps,
+  directionsLoading,
+  directionsError,
   submitting,
   statusMessage,
   labels
@@ -141,14 +164,38 @@ export default function CartPanel({
                     : labels.locationUnavailable}
                 </p>
               </div>
-              {mapEmbedUrl ? (
-                <iframe
-                  title={`${selectedLocation.name} map`}
-                  className="location-map"
-                  src={mapEmbedUrl}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
+
+              <div className="location-actions">
+                <strong>{labels.directions}</strong>
+                {directionsLoading ? <p>{labels.directionsLoading}</p> : null}
+                {!directionsLoading && directionsError ? <p>{directionsError}</p> : null}
+                {!directionsLoading && !directionsError && directionsSummary ? (
+                  <p>{formatRouteSummary(directionsSummary, labels)}</p>
+                ) : null}
+                {!directionsLoading && !directionsError && !directionsSummary && !userCoordinates ? (
+                  <p>{labels.directionsLocationHint}</p>
+                ) : null}
+              </div>
+
+              <LocationMap
+                selectedLocation={selectedLocation}
+                userCoordinates={userCoordinates}
+                routeCoordinates={routeCoordinates}
+                labels={labels}
+              />
+
+              {Array.isArray(directionsSteps) && directionsSteps.length > 0 ? (
+                <div className="directions-panel">
+                  <strong>{labels.routeToStore}</strong>
+                  <ol className="directions-list">
+                    {directionsSteps.map((step, index) => (
+                      <li key={`${step.instruction}-${index}`}>
+                        <span>{step.instruction}</span>
+                        <small>{formatStepMeta(step, labels)}</small>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               ) : null}
             </div>
           ) : null}

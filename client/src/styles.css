@@ -429,12 +429,57 @@ textarea:focus-visible {
   gap: 0.85rem;
 }
 
+.location-actions {
+  display: grid;
+  gap: 0.45rem;
+}
+
 .location-map {
   width: 100%;
-  min-height: 220px;
-  border: 0;
+  min-height: 260px;
   border-radius: var(--radius-md);
+  overflow: hidden;
   background: rgba(255, 255, 255, 0.6);
+}
+
+.location-map .leaflet-control-attribution {
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+}
+
+.location-map .leaflet-tooltip {
+  border: 0;
+  border-radius: 999px;
+  background: rgba(47, 33, 27, 0.92);
+  color: #fffaf4;
+  box-shadow: none;
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+}
+
+.directions-panel {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.directions-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.directions-list li {
+  color: var(--ink);
+  font-family: "Trebuchet MS", Verdana, sans-serif;
+}
+
+.directions-list span,
+.directions-list small {
+  display: block;
+}
+
+.directions-list small {
+  margin-top: 0.15rem;
+  color: var(--muted);
 }
 
 .checkout-form label {
