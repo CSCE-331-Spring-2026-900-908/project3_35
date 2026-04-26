@@ -363,9 +363,29 @@ function CashierDashboard() {
 
         {/* Cart sidebar*/}    
         <div style={{ flex: 1, minWidth: '350px', background: '#fff', borderRadius: '12px', border: '1px solid #e3d8cb', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+          
           {/* cart sidebar header */}
           <div style={{ background: '#f8f3eb', padding: '20px', borderBottom: '1px solid #e3d8cb' }}>
-            <h2 style={{ margin: 0, color: '#2f211b', fontSize: '22px' }}>Current Order</h2>
+            <h2 style={{ margin: '0 0 15px 0', color: '#2f211b', fontSize: '22px' }}>Current Order</h2>
+            
+            {/* customer name input field */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label htmlFor="customer-name" style={{ fontSize: '14px', color: '#6b5b50', fontWeight: 'bold' }}>Customer Name:</label>
+              <input 
+                id="customer-name"
+                type="text" 
+                placeholder="Enter name (e.g. John D.)" 
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                style={{ 
+                  padding: '10px', 
+                  borderRadius: '8px', 
+                  border: '1px solid #bda99a', 
+                  fontSize: '16px',
+                  outline: 'none'
+                }}
+              />
+            </div>
           </div>
 
           {/* receipt (scrollable items) */}
@@ -399,21 +419,27 @@ function CashierDashboard() {
 
           {/* Cart buttons */}
           <div style={{ background: '#f8f3eb', padding: '20px', borderTop: '1px solid #e3d8cb' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#6b5b50' }}>
-              <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', color: '#6b5b50' }}>
-              <span>Tax</span><span>${tax.toFixed(2)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '24px', fontWeight: 'bold', color: '#2f211b' }}>
-              <span>Total</span><span>${total.toFixed(2)}</span>
-            </div>
+            {/* totals display */}
 
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setCart([])} style={{ flex: 1, padding: '15px', background: '#ffffff', border: '2px solid #a33a2b', color: '#a33a2b', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
+              <button onClick={() => { setCart([]); setCustomerName(''); }} style={{ flex: 1, padding: '15px', background: '#ffffff', border: '2px solid #a33a2b', color: '#a33a2b', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
                 Clear
               </button>
-              <button onClick={handleSubmitOrder} disabled={cart.length === 0} style={{ flex: 2, padding: '15px', background: cart.length === 0 ? '#bda99a' : '#6f3c20', border: 'none', color: '#fff', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: cart.length === 0 ? 'not-allowed' : 'pointer' }}>
+              <button 
+                onClick={handleSubmitOrder} 
+                disabled={cart.length === 0 || !customerName.trim()} 
+                style={{ 
+                  flex: 2, 
+                  padding: '15px', 
+                  background: (cart.length === 0 || !customerName.trim()) ? '#bda99a' : '#6f3c20', 
+                  border: 'none', 
+                  color: '#fff', 
+                  borderRadius: '8px', 
+                  fontSize: '16px', 
+                  fontWeight: 'bold', 
+                  cursor: (cart.length === 0 || !customerName.trim()) ? 'not-allowed' : 'pointer' 
+                }}
+              >
                 Create Order
               </button>
             </div>
