@@ -8,6 +8,7 @@ import { createInventoryRouter } from './routes/inventory.js';
 import { createMenuRouter } from './routes/menu.js';
 import { createOrdersRouter } from './routes/orders.js';
 import { createReportsRouter } from './routes/reports.js';
+import { createAssistantRouter } from './routes/assistant.js';
 import { createTranslateRouter } from './routes/translate.js';
 import { createWeatherRouter } from './routes/weather.js';
 
@@ -37,6 +38,7 @@ app.use('/api/orders', createOrdersRouter(pool));
 app.use('/api/reports', createReportsRouter(pool));
 app.use('/api/translate', createTranslateRouter());
 app.use('/api/weather', createWeatherRouter());
+app.use('/api/assistant', createAssistantRouter());
 
 app.listen(port, () => {
   console.log(`Sharetea API listening on port ${port}`);
