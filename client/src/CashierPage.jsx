@@ -419,12 +419,34 @@ function CashierDashboard() {
 
           {/* Cart buttons */}
           <div style={{ background: '#f8f3eb', padding: '20px', borderTop: '1px solid #e3d8cb' }}>
-            {/* totals display */}
+            
+            {/* totals */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b5b50', fontSize: '16px' }}>
+                <span>Subtotal:</span>
+                <span>${subtotal.toFixed(2)}</span>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b5b50', fontSize: '16px' }}>
+                <span>Tax (8.25%):</span>
+                <span>${tax.toFixed(2)}</span>
+              </div>
 
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#2f211b', fontSize: '24px', fontWeight: 'bold', borderTop: '1px solid #e3d8cb', paddingTop: '10px', marginTop: '5px' }}>
+                <span>Total:</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Customer name input*/}
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => { setCart([]); setCustomerName(''); }} style={{ flex: 1, padding: '15px', background: '#ffffff', border: '2px solid #a33a2b', color: '#a33a2b', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
-                Clear
+              <button 
+                onClick={() => { setCart([]); setCustomerName(''); }} 
+                style={{ flex: 1, padding: '15px', background: '#ffffff', border: '2px solid #a33a2b', color: '#a33a2b', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+              Clear
               </button>
+
               <button 
                 onClick={handleSubmitOrder} 
                 disabled={cart.length === 0 || !customerName.trim()} 
@@ -442,6 +464,7 @@ function CashierDashboard() {
               >
                 Create Order
               </button>
+              
             </div>
           </div>
         </div>
