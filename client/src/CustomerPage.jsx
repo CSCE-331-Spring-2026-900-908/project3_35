@@ -15,6 +15,11 @@ import useTextToSpeech from './hooks/useTextToSpeech';
 
 // Sales tax rate used when calculating the final order total.
 const TAX_RATE = 0.0825;
+const CUSTOMER_CATEGORIES = ['All', 'Milk Tea', 'Fruit Tea', 'Seasonal', 'Slush'];
+const FRUIT_KEYWORDS = ['mango', 'orange', 'peach', 'strawberry', 'lychee', 'passion', 'passionfruit', 'pineapple', 'apple', 'grape', 'watermelon', 'kiwi', 'lemon', 'lime', 'blueberry', 'raspberry', 'blackberry', 'cherry', 'coconut', 'banana', 'melon', 'honeydew', 'pomelo', 'grapefruit', 'guava', 'dragonfruit', 'pomegranate', 'fruit'];
+const SEASONAL_KEYWORDS = ['seasonal', 'pumpkin', 'peppermint', 'gingerbread', 'holiday', 'autumn', 'summer', 'christmas', 'halloween', "valentine's"];
+const SLUSH_KEYWORDS = ['slush', 'smoothie', 'frozen'];
+const MILK_TEA_KEYWORDS = ['thai', 'taro', 'matcha', 'brown sugar', 'classic', 'oolong', 'jasmine'];
 
 // Default English text used throughout the customer page.
 // These values are also sent through the translation API when another language is selected.
@@ -272,6 +277,17 @@ function normalizeMenu(menu) {
   }
 
   return menu.map((item, index) => normalizeMenuItem(item, index));
+}
+
+function inferCategory(name) {
+  const lowerName = (name || '').toLowerCase();
+
+  if (SLUSH_KEYWORDS.some((keyword) => lowerName.includes(keyword))) return 'Slush';
+  if (SEASONAL_KEYWORDS.some((keyword) => lowerName.includes(keyword))) return 'Seasonal';
+  if (FRUIT_KEYWORDS.some((keyword) => lowerName.includes(keyword))) return 'Fruit Tea';
+  if (lowerName.includes('milk') || MILK_TEA_KEYWORDS.some((keyword) => lowerName.includes(keyword))) return 'Milk Tea';
+
+  return 'Milk Tea';
 }
 
 // Creates the default drink customization state when a menu item is selected.
@@ -785,8 +801,8 @@ export default function CustomerPage() {
 
   // Builds the category list from the loaded menu.
   const categories = useMemo(() => {
-    return ['All', ...new Set(menu.map((item) => item.category))];
-  }, [menu]);
+    return CUSTOMER_CATEGORIES;
+  }, []);
 
   // Filters the visible menu based on the selected category.
   const visibleMenu = useMemo(() => {
@@ -794,7 +810,7 @@ export default function CustomerPage() {
       return translatedMenu;
     }
 
-    return translatedMenu.filter((item) => item.category === activeCategory);
+    return translatedMenu.filter((item) => inferCategory(item.name) === activeCategory);
   }, [activeCategory, translatedMenu]);
 
   // Resets the accessible guide index if the visible menu becomes shorter.
