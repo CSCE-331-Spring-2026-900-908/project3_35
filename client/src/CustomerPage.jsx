@@ -564,14 +564,17 @@ export default function CustomerPage() {
   // Translates drink size labels.
   function translateSize(size) {
     if (language === 'es') {
+      if (size === 'Small') return 'Pequeno';
       if (size === 'Regular') return 'Regular';
       if (size === 'Large') return 'Grande';
     }
     if (language === 'zh-CN') {
+      if (size === 'Small') return '小杯';
       if (size === 'Regular') return '常规';
       if (size === 'Large') return '大杯';
     }
     if (language === 'ko') {
+      if (size === 'Small') return '스몰';
       if (size === 'Regular') return '기본';
       if (size === 'Large') return '라지';
     }
