@@ -298,8 +298,8 @@ function EmployeeManagePanel({
     <section style={styles.panel}>
       <div style={styles.panelHeader}>
         <div>
-          <h2 style={styles.panelTitle}>Employee Management</h2>
-          <p style={styles.hint}>Select an employee row, then update pay/details, terminate, or clear.</p>
+          <h2 style={styles.panelTitle}>Employee Accounts</h2>
+          <p style={styles.hint}>Select an employee row, then create, update pay/details, terminate, or clear.</p>
         </div>
         <div style={styles.panelMeta}>{rows.length} employees</div>
       </div>
@@ -312,14 +312,18 @@ function EmployeeManagePanel({
               <th style={styles.th}>Job Title</th>
               <th style={styles.th}>First Name</th>
               <th style={styles.th}>Last Name</th>
+              <th style={styles.th}>Schedule</th>
+              <th style={styles.th}>Payment Info</th>
+              <th style={styles.th}>Start Date</th>
               <th style={styles.th}>Hourly Pay</th>
+              <th style={styles.th}>Benefits</th>
               <th style={styles.th}>Email</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td style={styles.emptyCell} colSpan={6}>
+                <td style={styles.emptyCell} colSpan={10}>
                   No employee records found.
                 </td>
               </tr>
@@ -336,7 +340,11 @@ function EmployeeManagePanel({
                     <td style={styles.td}>{row.job_title}</td>
                     <td style={styles.td}>{row.first_name}</td>
                     <td style={styles.td}>{row.last_name}</td>
+                    <td style={styles.td}>{row.schedule}</td>
+                    <td style={styles.td}>{row.payment_info}</td>
+                    <td style={styles.td}>{formatDate(row.start_date)}</td>
                     <td style={styles.td}>{formatMoney(row.hourly_pay)}</td>
+                    <td style={styles.td}>{row.benefits}</td>
                     <td style={styles.td}>{row.email}</td>
                   </tr>
                 );
@@ -1554,26 +1562,6 @@ function ManagerDashboard() {
                 {busy.employees ? 'Loading…' : 'Reload employees'}
               </button>
             </div>
-            <DataTable
-              title="Employee Accounts"
-              rows={employees}
-              preferredOrder={[
-                'employee_id',
-                'job_title',
-                'first_name',
-                'last_name',
-                'schedule',
-                'payment_info',
-                'start_date',
-                'hourly_pay',
-                'benefits',
-                'email'
-              ]}
-              formatters={{
-                start_date: (value) => formatDate(value),
-                hourly_pay: (value) => formatMoney(value)
-              }}
-            />
             <EmployeeManagePanel
               rows={employees}
               form={employeeEditForm}
