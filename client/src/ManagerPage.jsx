@@ -1437,7 +1437,25 @@ function ManagerDashboard() {
             style={activeTab === 'inventory' ? styles.tabSelected : styles.tab}
             onClick={() => setActiveTab('inventory')}
           >
-            Inventory Items
+            Inventory
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'menu'}
+            style={activeTab === 'menu' ? styles.tabSelected : styles.tab}
+            onClick={() => setActiveTab('menu')}
+          >
+            Menu
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'employees'}
+            style={activeTab === 'employees' ? styles.tabSelected : styles.tab}
+            onClick={() => setActiveTab('employees')}
+          >
+            Employee
           </button>
           <button
             type="button"
@@ -1457,28 +1475,10 @@ function ManagerDashboard() {
           >
             Reports
           </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'employees'}
-            style={activeTab === 'employees' ? styles.tabSelected : styles.tab}
-            onClick={() => setActiveTab('employees')}
-          >
-            Employees
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'menu'}
-            style={activeTab === 'menu' ? styles.tabSelected : styles.tab}
-            onClick={() => setActiveTab('menu')}
-          >
-            Menu
-          </button>
         </div>
 
         {activeTab === 'inventory' ? (
-          <div style={styles.tabBody} role="tabpanel" aria-label="Inventory Items tab">
+          <div style={styles.tabBody} role="tabpanel" aria-label="Inventory tab">
             <div style={styles.tabActions}>
               <button type="button" style={styles.secondaryButton} onClick={loadInventory} disabled={busy.inventory}>
                 {busy.inventory ? 'Loading…' : 'Reload inventory'}
@@ -1619,7 +1619,7 @@ function ManagerDashboard() {
         ) : null}
 
         {activeTab === 'employees' ? (
-          <div style={styles.tabBody} role="tabpanel" aria-label="Employees tab">
+          <div style={styles.tabBody} role="tabpanel" aria-label="Employee tab">
             <div style={styles.tabActionsLeft}>
               <button type="button" style={styles.secondaryButton} onClick={loadEmployees} disabled={busy.employees}>
                 {busy.employees ? 'Loading…' : 'Reload employees'}
