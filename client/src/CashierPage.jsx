@@ -156,6 +156,13 @@ function CashierDashboard() {
     setCart((current) => current.filter((item) => item.id !== id));
   }
 
+  function updateCartItemQuantity(id, nextQuantity) {
+    const safeQuantity = Math.max(1, Number(nextQuantity || 1));
+    setCart((current) =>
+      current.map((item) => (item.id === id ? { ...item, quantity: safeQuantity } : item))
+    );
+  }
+
   // Toggle Toppings
   function toggleTopping(name) {
     if (!selectedItem || !selection) {
@@ -411,7 +418,23 @@ function CashierDashboard() {
                     <span className="item-meta">{item.size} • {item.sweetness} • {item.ice}</span>
                   </div>
                   <div className="item-price-actions">
-                    <strong className="item-price">${item.total.toFixed(2)}</strong>
+                    <strong className="item-price">${(Number(item.total || 0) * Number(item.quantity || 1)).toFixed(2)}</strong>
+                    <div className="category-row">
+                      <button
+                        onClick={() => updateCartItemQuantity(item.id, Number(item.quantity || 1) - 1)}
+                        className="category-btn"
+                        disabled={Number(item.quantity || 1) <= 1}
+                      >
+                        -
+                      </button>
+                      <span className="item-meta">Qty: {item.quantity || 1}</span>
+                      <button
+                        onClick={() => updateCartItemQuantity(item.id, Number(item.quantity || 1) + 1)}
+                        className="category-btn"
+                      >
+                        +
+                      </button>
+                    </div>
                     <button onClick={() => removeFromCart(item.id)} className="btn-remove-item">Remove</button>
                   </div>
                 </div>
