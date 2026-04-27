@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import CartPanel from './components/CartPanel';
 import CustomizerPanel from './components/CustomizerPanel';
 import MenuCard from './components/MenuCard';
+import PersonalAssistant from './components/PersonalAssistant';
 import { apiUrl } from './apiBase';
 
 const TAX_RATE = 0.0825;
@@ -70,7 +71,15 @@ const baseText = {
   addToCart: 'Add To Cart',
   orderConfirmed: 'Order confirmed. Ticket {orderNumber} is in progress.',
   addedToCart: '{itemName} added to cart.',
-  orderFailed: 'Order could not be submitted: {message}'
+  orderFailed: 'Order could not be submitted: {message}',
+  assistantTitle: 'Personal Assistant',
+  assistantWelcome:
+    'Hi! I can answer questions about our drinks and toppings, compare options, and explain how checkout works. What would you like to know?',
+  assistantPlaceholder: 'Ask about the menu or ordering…',
+  assistantSend: 'Send',
+  assistantThinking: 'Thinking…',
+  assistantClose: 'Close assistant',
+  assistantYou: 'You'
 };
 
 const STORE_LOCATIONS = [
@@ -1002,6 +1011,8 @@ export default function CustomerPage() {
           translateIce={translateIce}
         />
       ) : null}
+
+      <PersonalAssistant menu={menu} cart={cart} language={language} labels={translatedText} />
     </div>
   );
 }
