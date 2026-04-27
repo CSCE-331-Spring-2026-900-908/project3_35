@@ -157,14 +157,7 @@ export function createAuthRouter(pool) {
       });
     }
 
-    const email = normalizeEmail(request.body?.email);
     const pin = cleanString(request.body?.pin);
-
-    if (!email || !email.includes('@')) {
-      return response.status(400).json({
-        error: 'A valid email is required.'
-      });
-    }
 
     if (!isValidPin(pin)) {
       return response.status(400).json({
@@ -183,25 +176,26 @@ export function createAuthRouter(pool) {
             job_title,
             password_hash
           FROM employee
-          WHERE LOWER(email) = $1
-          LIMIT 1
+          WHERE password_hash = $1
+          ORDER BY employee_id
         `,
-        [email]
+        [pin]
       );
 
       if (result.rows.length === 0) {
         return response.status(401).json({
-          error: 'Invalid email or PIN.'
+          error: 'Invalid PIN.'
+        });
+      }
+
+      if (result.rows.length > 1) {
+        return response.status(409).json({
+          error: 'This PIN is assigned to multiple employees.',
+          details: 'Each employee PIN must be unique before PIN sign-in can be used.'
         });
       }
 
       const employeeRow = result.rows[0];
-      if (String(employeeRow.password_hash || '') !== pin) {
-        return response.status(401).json({
-          error: 'Invalid email or PIN.'
-        });
-      }
-
       const employee = normalizeEmployee(employeeRow);
       const user = {
         ...employee,

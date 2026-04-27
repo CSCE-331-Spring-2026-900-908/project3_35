@@ -56,13 +56,13 @@ export function beginGoogleLogin(nextPath = '/') {
   window.location.assign(apiUrl('/api/auth/google/start'));
 }
 
-export async function loginWithPin({ email, pin, nextPath = '/' }) {
+export async function loginWithPin({ pin, nextPath = '/' }) {
   const response = await fetch(apiUrl('/api/auth/login'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ email, pin })
+    body: JSON.stringify({ pin })
   });
 
   const payload = await response.json().catch(() => ({}));

@@ -6,6 +6,31 @@ function roleLabel(requiredRole) {
   return requiredRole === 'manager' ? 'manager' : 'staff';
 }
 
+function formatDisplayName(user) {
+  const firstName = String(user?.firstName || '').trim();
+  const lastName = String(user?.lastName || '').trim();
+  const jobTitle = String(user?.jobTitle || '').trim();
+
+  if (!firstName) {
+    return [firstName, lastName].filter(Boolean).join(' ');
+  }
+
+  const compactJobTitle = jobTitle.replace(/\s+/g, '').toLowerCase();
+  const compactFirstName = firstName.replace(/\s+/g, '');
+
+  if (
+    compactJobTitle
+    && compactFirstName.toLowerCase().startsWith(compactJobTitle)
+    && compactFirstName.length > compactJobTitle.length
+  ) {
+    const suffix = compactFirstName.slice(compactJobTitle.length);
+    const normalizedFirstName = `${jobTitle} ${suffix}`.trim();
+    return [normalizedFirstName, lastName].filter(Boolean).join(' ');
+  }
+
+  return [firstName, lastName].filter(Boolean).join(' ');
+}
+
 export default function StaffAccessPage({
   requiredRole,
   title,
@@ -18,7 +43,6 @@ export default function StaffAccessPage({
   const [authState, setAuthState] = useState('checking');
   const [user, setUser] = useState(getStoredUser());
   const [error, setError] = useState('');
-  const [email, setEmail] = useState('');
   const [pin, setPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -56,7 +80,6 @@ export default function StaffAccessPage({
 
     try {
       const currentUser = await loginWithPin({
-        email,
         pin,
         nextPath: window.location.pathname
       });
@@ -96,20 +119,8 @@ export default function StaffAccessPage({
           {authMethod === 'pin' ? (
             <form style={styles.form} onSubmit={handleLoginSubmit}>
               <p style={styles.helperText}>
-                Sign in with the email on your employee record and your 4-digit PIN.
+                Sign in with your unique 4-digit employee PIN.
               </p>
-              <label style={styles.field}>
-                <span style={styles.fieldLabel}>Email</span>
-                <input
-                  style={styles.input}
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="employee@company.com"
-                  autoComplete="username"
-                  required
-                />
-              </label>
               <label style={styles.field}>
                 <span style={styles.fieldLabel}>4-digit PIN</span>
                 <input
@@ -197,7 +208,7 @@ export default function StaffAccessPage({
         <div style={styles.sessionBar}>
           <div style={styles.sessionBarInner}>
             <div style={styles.sessionSummary}>
-              <strong>{user.firstName} {user.lastName}</strong>
+              <strong>{formatDisplayName(user)}</strong>
               <span>{user.jobTitle}</span>
               <span>{user.email}</span>
             </div>
@@ -224,7 +235,7 @@ export default function StaffAccessPage({
             <p style={styles.subtitle}>{description}</p>
           </div>
           <div style={styles.userCard}>
-            <strong>{user.firstName} {user.lastName}</strong>
+            <strong>{formatDisplayName(user)}</strong>
             <span>{user.jobTitle}</span>
             <span>{user.email}</span>
           </div>
