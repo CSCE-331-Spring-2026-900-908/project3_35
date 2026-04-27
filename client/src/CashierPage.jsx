@@ -8,7 +8,7 @@ import StaffAccessPage from './components/StaffAccessPage.jsx';
 import MenuCard from './components/MenuCard.jsx';
 import CartPanel from './components/CartPanel.jsx';
 import CustomizerPanel from './components/CustomizerPanel.jsx';
-
+import './cashierstyles.css';
 
 const TAX_RATE = 0.0825;
 
@@ -243,14 +243,14 @@ function CashierDashboard() {
 
               <div className="pos-menu-grid">
                 {menu.length === 0 ? (
-                  <p style={{color: '#6f3c20'}}>Loading menu items...</p>
+                  <p className="loading-text">Loading menu items...</p>
                 ) : displayedMenu.length === 0 ? (
-                  <p style={{color: '#6f3c20'}}>No items found in {activeCategory}.</p>
+                  <p className="loading-text">No items found in {activeCategory}.</p>
                 ) : (
                   displayedMenu.map(item => (
                     <div key={item.id} onClick={() => openCustomizer(item)} className="drink-card">
-                      <strong>{item.name}</strong>
-                      <span>${(Number(item.basePrice) || 0).toFixed(2)}</span>
+                      <strong className="drink-card-name">{item.name}</strong>
+                      <span className="drink-card-price">${(Number(item.basePrice) || 0).toFixed(2)}</span>
                     </div>
                   ))
                 )}
@@ -259,13 +259,13 @@ function CashierDashboard() {
           ) : (
             <div className="customizer-container">
               <div className="customizer-header">
-                <div>
-                  <h2 style={{ margin: 0, color: '#2f211b', fontSize: '28px' }}>{selectedItem.name}</h2>
-                  <span style={{ fontSize: '18px', color: '#6b5b50', fontWeight: 'bold' }}>Current Total: ${selection.total.toFixed(2)}</span>
+                <div className="header-info">
+                  <h2 className="customizer-title">{selectedItem.name}</h2>
+                  <span className="customizer-total">Current Total: ${selection.total.toFixed(2)}</span>
                 </div>
                 <button 
                   onClick={() => { setSelectedItem(null); setSelection(null); }} 
-                  style={{ padding: '12px 24px', background: '#fff', border: '2px solid #a33a2b', color: '#a33a2b', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
+                  className="btn-cancel"
                 >
                   Cancel
                 </button>
@@ -273,15 +273,14 @@ function CashierDashboard() {
 
               <div className="customizer-options-list">
                 {/* SIZE SECTION */}
-                <div>
-                  <h3 style={{ color: '#2f211b', margin: '0 0 10px 0' }}>Size</h3>
+                <div className="option-section">
+                  <h3 className="option-label">Size</h3>
                   <div className="category-row">
                     {['Regular', 'Large'].map(size => (
                       <button 
                         key={size} 
                         onClick={() => updateSelection('size', size)} 
-                        className={`category-btn ${selection.size === size ? 'active' : ''}`}
-                        style={{ flex: 1 }}
+                        className={`category-btn flex-1 ${selection.size === size ? 'active' : ''}`}
                       >
                         {size} {size === 'Large' ? '(+$0.90)' : ''}
                       </button>
@@ -290,10 +289,10 @@ function CashierDashboard() {
                 </div>
 
                 {/* SWEETNESS & ICE SECTION */}
-                <div style={{ display: 'flex', gap: '20px' }}>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ color: '#2f211b', margin: '0 0 10px 0' }}>Sweetness</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div className="dual-options-row">
+                  <div className="option-column">
+                    <h3 className="option-label">Sweetness</h3>
+                    <div className="options-grid">
                       {['0%', '25%', '50%', '75%', '100%'].map(level => (
                         <button 
                           key={level} 
@@ -305,9 +304,9 @@ function CashierDashboard() {
                       ))}
                     </div>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ color: '#2f211b', margin: '0 0 10px 0' }}>Ice Level</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div className="option-column">
+                    <h3 className="option-label">Ice Level</h3>
+                    <div className="options-grid">
                       {['No Ice', 'Less Ice', 'Regular Ice', 'Extra Ice'].map(level => (
                         <button 
                           key={level} 
@@ -322,11 +321,11 @@ function CashierDashboard() {
                 </div>
 
                 {/* TOPPINGS SECTION */}
-                <div>
-                  <h3 style={{ color: '#2f211b', margin: '0 0 10px 0' }}>Toppings</h3>
-                  <div className="pos-menu-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', maxHeight: 'none' }}>
+                <div className="option-section">
+                  <h3 className="option-label">Toppings</h3>
+                  <div className="toppings-selection-grid">
                     {(!selectedItem.toppings || selectedItem.toppings.length === 0) ? (
-                      <p style={{ color: '#6b5b50' }}>No toppings available.</p>
+                      <p className="no-items-text">No toppings available.</p>
                     ) : (
                       selectedItem.toppings.map(topping => {
                         const isSelected = selection.toppings.includes(topping.name);
@@ -334,11 +333,10 @@ function CashierDashboard() {
                           <button 
                             key={topping.name} 
                             onClick={() => toggleTopping(topping.name)} 
-                            className={`category-btn ${isSelected ? 'active' : ''}`}
-                            style={{ display: 'flex', flexDirection: 'column', height: 'auto', padding: '10px' }}
+                            className={`topping-choice-btn ${isSelected ? 'active' : ''}`}
                           >
-                            <strong style={{ fontSize: '14px' }}>{topping.name}</strong>
-                            <span style={{ fontSize: '12px' }}>+${Number(topping.price).toFixed(2)}</span>
+                            <strong className="topping-name">{topping.name}</strong>
+                            <span className="topping-price">+${Number(topping.price).toFixed(2)}</span>
                           </button>
                         );
                       })
@@ -347,8 +345,8 @@ function CashierDashboard() {
                 </div>
               </div>
 
-              <div style={{ paddingTop: '15px', borderTop: '2px solid #f8f3eb', marginTop: '10px' }}>
-                <button onClick={addToCart} style={{ width: '100%', padding: '20px', background: '#6f3c20', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer' }}>
+              <div className="customizer-footer">
+                <button onClick={addToCart} className="btn-add-to-cart">
                   Add Drink to Cart
                 </button>
               </div>
@@ -358,32 +356,32 @@ function CashierDashboard() {
 
         <div className="cart-sidebar">
           <div className="cart-header">
-            <h2 style={{ margin: '0 0 15px 0', color: '#2f211b', fontSize: '22px' }}>Current Order</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontSize: '14px', color: '#6b5b50', fontWeight: 'bold' }}>Customer Name:</label>
+            <h2 className="sidebar-title">Current Order</h2>
+            <div className="customer-input-group">
+              <label className="input-label">Customer Name:</label>
               <input 
                 type="text" 
                 placeholder="Enter name" 
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #bda99a', fontSize: '16px' }}
+                className="customer-input"
               />
             </div>
           </div>
 
           <div className="cart-items-scroll">
             {cart.length === 0 ? (
-              <p style={{ color: '#bda99a', textAlign: 'center', marginTop: '40px' }}>Order is empty.</p>
+              <p className="empty-cart-msg">Order is empty.</p>
             ) : (
               cart.map(item => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e3d8cb', paddingBottom: '15px' }}>
-                  <div style={{ flex: 1 }}>
-                    <strong style={{ fontSize: '18px' }}>{item.name}</strong>
-                    <span style={{ display: 'block', fontSize: '14px', color: '#6b5b50' }}>{item.size} • {item.sweetness}</span>
+                <div key={item.id} className="cart-item-row">
+                  <div className="item-info">
+                    <strong className="item-name">{item.name}</strong>
+                    <span className="item-meta">{item.size} • {item.sweetness} • {item.ice}</span>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <strong>${item.total.toFixed(2)}</strong>
-                    <button onClick={() => removeFromCart(item.id)} style={{ color: '#a33a2b', background: 'none', border: 'none', display: 'block', cursor: 'pointer' }}>Remove</button>
+                  <div className="item-price-actions">
+                    <strong className="item-price">${item.total.toFixed(2)}</strong>
+                    <button onClick={() => removeFromCart(item.id)} className="btn-remove-item">Remove</button>
                   </div>
                 </div>
               ))
@@ -391,20 +389,18 @@ function CashierDashboard() {
           </div>
 
           <div className="totals-panel">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Subtotal:</span><span>${subtotal.toFixed(2)}</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Tax:</span><span>${tax.toFixed(2)}</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '24px', fontWeight: 'bold', borderTop: '1px solid #e3d8cb', paddingTop: '10px' }}>
-                <span>Total:</span><span>${total.toFixed(2)}</span>
-              </div>
+            <div className="totals-breakdown">
+              <div className="totals-row"><span>Subtotal:</span><span>${subtotal.toFixed(2)}</span></div>
+              <div className="totals-row"><span>Tax (8.25%):</span><span>${tax.toFixed(2)}</span></div>
+              <div className="grand-total-row"><span>Total:</span><span>${total.toFixed(2)}</span></div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setCart([])} style={{ flex: 1, padding: '15px', borderRadius: '8px', cursor: 'pointer' }}>Clear</button>
+            <div className="action-row">
+              <button onClick={() => { setCart([]); setCustomerName(''); }} className="btn-clear-order">Clear</button>
               <button 
                 onClick={handleSubmitOrder} 
                 disabled={cart.length === 0 || !customerName.trim()}
-                style={{ flex: 2, padding: '15px', background: '#6f3c20', color: '#fff', borderRadius: '8px', cursor: 'pointer' }}
+                className="btn-submit-order"
               >
                 Create Order
               </button>
