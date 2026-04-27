@@ -1,0 +1,159 @@
+/* Cashier.css */
+
+.cashier-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  min-height: 100vh;
+  background: #efe7dc;
+}
+
+.cashier-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.cashier-header h1 {
+  color: #2f211b;
+  margin: 0;
+}
+
+.main-content-flex {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+}
+
+.menu-column {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Category Filter Buttons */
+.category-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.category-btn {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  border: 1px solid #bda99a;
+  background: #ffffff;
+  color: #2f211b;
+}
+
+.category-btn.active {
+  border: 2px solid #6f3c20;
+  background: #fff3e6;
+  color: #6f3c20;
+}
+
+/* Drink Grid */
+.pos-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+  align-content: start;
+  overflow-y: auto;
+  max-height: calc(100vh - 150px);
+}
+
+.drink-card {
+  background: #ffffff;
+  border: 1px solid #e3d8cb;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 120px;
+}
+
+.drink-card strong {
+  font-size: 18px;
+  color: #2f211b;
+  margin-bottom: 10px;
+}
+
+.drink-card span {
+  font-size: 16px;
+  color: #6f3c20;
+}
+
+/* Customizer Panel */
+.customizer-container {
+  background: #f8f3eb;
+  border-radius: 12px;
+  border: 1px solid #e3d8cb;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+}
+
+.customizer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #f8f3eb;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+
+.customizer-options-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+/* Cart Sidebar */
+.cart-sidebar {
+  flex: 1;
+  min-width: 350px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e3d8cb;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.cart-header {
+  background: #f8f3eb;
+  padding: 20px;
+  border-bottom: 1px solid #e3d8cb;
+}
+
+.cart-items-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.totals-panel {
+  background: #f8f3eb;
+  padding: 20px;
+  border-top: 1px solid #e3d8cb;
+}
