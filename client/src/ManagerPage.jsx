@@ -1366,7 +1366,7 @@ function ManagerDashboard() {
     <div style={styles.page}>
       <div style={styles.header}>
         <div>
-          <p style={styles.kicker}>SHARETEA</p>
+          <p style={styles.kicker}>MOONWAKE TEA ATELIER</p>
           <h1 style={styles.title}>Manager Dashboard</h1>
           <p style={styles.subtitle}>Inventory, recent orders, reporting tools, and employee account creation.</p>
         </div>
