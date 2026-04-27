@@ -14,6 +14,22 @@ const EMPTY_INVENTORY_FORM = {
   itemCategory: 'supply'
 };
 
+const JOB_TITLE_OPTIONS = ['Cashier', 'Manager', 'Barista', 'Shift Lead'];
+
+const SCHEDULE_OPTIONS = [
+  'Morning — 6:00 AM to 2:00 PM',
+  'Afternoon — 2:00 PM to 10:00 PM',
+  'Opening — 5:30 AM to 1:30 PM',
+  'Closing — 3:00 PM to 11:00 PM'
+];
+
+const BENEFIT_OPTION_ROWS = [
+  { id: 'none', label: 'None' },
+  { id: 'dental', label: 'Dental' },
+  { id: 'health', label: 'Health' },
+  { id: '401k', label: '401(k)' }
+];
+
 const EMPTY_EMPLOYEE_EDIT_FORM = {
   employeeId: '',
   jobTitle: '',
@@ -23,7 +39,7 @@ const EMPTY_EMPLOYEE_EDIT_FORM = {
   paymentInfo: '',
   startDate: '',
   hourlyPay: '',
-  benefits: '',
+  benefits: 'None',
   email: '',
   pin: ''
 };
@@ -78,6 +94,59 @@ function formatDate(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return String(value);
   return d.toLocaleDateString();
+}
+
+/** Map a token from DB/UI to a canonical benefit id, or null if unrecognized. */
+function normalizeBenefitToken(raw) {
+  const t = String(raw ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[()]/g, '');
+  if (!t || t === 'none') return 'none';
+  if (t === 'dental') return 'dental';
+  if (t === 'health') return 'health';
+  if (t === '401k' || t === '401' || /^401/.test(t)) return '401k';
+  return null;
+}
+
+/**
+ * Parsed benefit selections, or `null` if the string is legacy free text with no recognized tokens.
+ */
+function recognizedBenefitsFromString(value) {
+  const s = String(value ?? '').trim();
+  if (!s) return new Set(['none']);
+  if (s.toLowerCase() === 'none') return new Set(['none']);
+
+  const tokens = s.split(/[,;]/).map((x) => x.trim()).filter(Boolean);
+  const out = new Set();
+  for (const tok of tokens) {
+    const n = normalizeBenefitToken(tok);
+    if (n && n !== 'none') out.add(n);
+  }
+  if (out.size === 0) return null;
+  return out;
+}
+
+function serializeBenefitsSet(set) {
+  if (!set || set.size === 0 || set.has('none')) return 'None';
+  const order = ['dental', 'health', '401k'];
+  return order.filter((k) => set.has(k)).join(', ');
+}
+
+function toggleBenefitSelection(currentStr, benefitId) {
+  let set = recognizedBenefitsFromString(currentStr);
+  if (set === null) set = new Set();
+
+  if (benefitId === 'none') {
+    return serializeBenefitsSet(new Set(['none']));
+  }
+
+  set.delete('none');
+  if (set.has(benefitId)) set.delete(benefitId);
+  else set.add(benefitId);
+
+  if (set.size === 0) return 'None';
+  return serializeBenefitsSet(set);
 }
 
 function DataTable({ title, rows, preferredOrder, formatters }) {
@@ -369,12 +438,31 @@ function EmployeeManagePanel({
         </label>
         <label style={styles.label}>
           Job Title
-          <input
+          <select
             style={styles.input}
-            value={form.jobTitle}
-            onChange={(e) => onFormChange('jobTitle', e.target.value)}
+            value={
+              JOB_TITLE_OPTIONS.includes(form.jobTitle)
+                ? form.jobTitle
+                : form.jobTitle
+                  ? '__legacy__'
+                  : ''
+            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v !== '__legacy__') onFormChange('jobTitle', v);
+            }}
             required
-          />
+          >
+            <option value="">Select job title</option>
+            {form.jobTitle && !JOB_TITLE_OPTIONS.includes(form.jobTitle) ? (
+              <option value="__legacy__">{form.jobTitle}</option>
+            ) : null}
+            {JOB_TITLE_OPTIONS.map((title) => (
+              <option key={title} value={title}>
+                {title}
+              </option>
+            ))}
+          </select>
         </label>
         <label style={styles.label}>
           First Name
@@ -396,12 +484,31 @@ function EmployeeManagePanel({
         </label>
         <label style={styles.label}>
           Schedule
-          <input
+          <select
             style={styles.input}
-            value={form.schedule}
-            onChange={(e) => onFormChange('schedule', e.target.value)}
+            value={
+              SCHEDULE_OPTIONS.includes(form.schedule)
+                ? form.schedule
+                : form.schedule
+                  ? '__legacy__'
+                  : ''
+            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v !== '__legacy__') onFormChange('schedule', v);
+            }}
             required
-          />
+          >
+            <option value="">Select shift</option>
+            {form.schedule && !SCHEDULE_OPTIONS.includes(form.schedule) ? (
+              <option value="__legacy__">{form.schedule}</option>
+            ) : null}
+            {SCHEDULE_OPTIONS.map((slot) => (
+              <option key={slot} value={slot}>
+                {slot}
+              </option>
+            ))}
+          </select>
         </label>
         <label style={styles.label}>
           Payment Info
@@ -434,15 +541,30 @@ function EmployeeManagePanel({
             required
           />
         </label>
-        <label style={styles.label}>
-          Benefits
-          <input
-            style={styles.input}
-            value={form.benefits}
-            onChange={(e) => onFormChange('benefits', e.target.value)}
-            required
-          />
-        </label>
+        <div style={styles.label}>
+          <span>Benefits</span>
+          {recognizedBenefitsFromString(form.benefits) === null ? (
+            <p style={styles.benefitsLegacyHint}>
+              Stored value does not match the standard options below. Pick options to replace it on save.
+            </p>
+          ) : null}
+          <div style={styles.benefitsCheckboxRow}>
+            {BENEFIT_OPTION_ROWS.map(({ id, label }) => {
+              const set = recognizedBenefitsFromString(form.benefits);
+              const checked = set ? set.has(id) : false;
+              return (
+                <label key={id} style={styles.benefitsCheckboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => onFormChange('benefits', toggleBenefitSelection(form.benefits, id))}
+                  />
+                  {label}
+                </label>
+              );
+            })}
+          </div>
+        </div>
         <label style={styles.label}>
           Email
           <input
@@ -1835,6 +1957,26 @@ const styles = {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
     gap: '14px'
+  },
+  benefitsLegacyHint: {
+    margin: '2px 0 0',
+    fontSize: '0.85rem',
+    color: '#8b6914'
+  },
+  benefitsCheckboxRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '14px',
+    alignItems: 'center',
+    marginTop: '4px'
+  },
+  benefitsCheckboxLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    cursor: 'pointer',
+    color: '#2f211b',
+    fontWeight: 500
   },
   inventoryFormGrid: {
     display: 'grid',
