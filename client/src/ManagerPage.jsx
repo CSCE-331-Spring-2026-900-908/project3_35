@@ -159,7 +159,7 @@ function InventoryManagePanel({
       <div style={styles.panelHeader}>
         <div>
           <h2 style={styles.panelTitle}>Inventory Management</h2>
-          <p style={styles.hint}>Select an item to edit stock, price, and category, or add a new one.</p>
+          <p style={styles.hint}>Select an inventory row to edit stock, price, and category, or add a new one.</p>
         </div>
         <div style={styles.panelMeta}>{rows.length} items</div>
       </div>
@@ -207,7 +207,7 @@ function InventoryManagePanel({
       <form style={styles.inventoryFormGrid} onSubmit={onAddItem}>
         <label style={styles.label}>
           Item ID
-          <input style={styles.input} value={form.itemInventoryId} disabled placeholder="Auto-generated" />
+          <input style={styles.input} value={form.itemInventoryId} disabled placeholder="Select from table" />
         </label>
 
         <label style={styles.label}>
@@ -288,7 +288,6 @@ function EmployeeManagePanel({
   onFormChange,
   onSelectRow,
   onCreateEmployee,
-  onUpdateHourlyPay,
   onUpdateDetails,
   onTerminateEmployee,
   onClearForm,
@@ -462,14 +461,6 @@ function EmployeeManagePanel({
           <button type="button" style={styles.primaryButton} onClick={onCreateEmployee} disabled={busy.employeeCreate}>
             {busy.employeeCreate ? 'Creating…' : 'Create Employee'}
           </button>
-          <button
-            type="button"
-            style={styles.secondaryButton}
-            onClick={onUpdateHourlyPay}
-            disabled={!form.employeeId || busy.employeeHourlyUpdate}
-          >
-            {busy.employeeHourlyUpdate ? 'Updating…' : 'Update Hourly Pay'}
-          </button>
           <button type="submit" style={styles.primaryButton} disabled={!form.employeeId || busy.employeeUpdate}>
             {busy.employeeUpdate ? 'Updating…' : 'Update Employee Details'}
           </button>
@@ -499,14 +490,16 @@ function MenuManagePanel({
   onSelectMenuRow,
   onSelectRecipeRow,
   onAddMenuItem,
-  onUpdatePrice,
   onUpdateMenuItem,
+  onStartNewIngredient,
   onAddRecipeComponent,
   onUpdateRecipeQuantity,
   onRemoveRecipeComponent,
   onClearForm,
   busy
 }) {
+  const [showIngredientEditor, setShowIngredientEditor] = useState(false);
+
   return (
     <section style={styles.panel}>
       <div style={styles.panelHeader}>
@@ -585,9 +578,6 @@ function MenuManagePanel({
           <button type="submit" style={styles.primaryButton} disabled={busy.menuAdd}>
             {busy.menuAdd ? 'Adding…' : 'Add Menu Item'}
           </button>
-          <button type="button" style={styles.secondaryButton} onClick={onUpdatePrice} disabled={!form.menuItemId || busy.menuUpdatePrice}>
-            {busy.menuUpdatePrice ? 'Updating…' : 'Update Price'}
-          </button>
           <button type="button" style={styles.secondaryButton} onClick={onUpdateMenuItem} disabled={!form.menuItemId || busy.menuUpdate}>
             {busy.menuUpdate ? 'Updating…' : 'Update Menu Item'}
           </button>
@@ -595,80 +585,131 @@ function MenuManagePanel({
             Clear
           </button>
         </div>
-      </form>
 
-      <div style={styles.tableWrap}>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>Ingredient ID</th>
-              <th style={styles.th}>Ingredient Name</th>
-              <th style={styles.th}>Quantity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recipeRows.length === 0 ? (
-              <tr>
-                <td style={styles.emptyCell} colSpan={3}>
-                  Select a menu item to load recipe components.
-                </td>
-              </tr>
-            ) : (
-              recipeRows.map((row, idx) => {
-                const key = row.row_ref ?? `${row.item_inventory_id}-${idx}`;
-                const selected = String(form.selectedRecipeRowRef) === String(row.row_ref);
-                return (
-                  <tr key={key} style={selected ? styles.selectedRow : undefined} onClick={() => onSelectRecipeRow(row)}>
-                    <td style={styles.td}>{row.item_inventory_id}</td>
-                    <td style={styles.td}>{row.ingredient_name}</td>
-                    <td style={styles.td}>{row.quantity}</td>
+        <div style={styles.menuIngredientSection}>
+          <div style={styles.splitRow}>
+            <h3 style={styles.reportTitle}>Ingredients For Selected Drink</h3>
+            <button
+              type="button"
+              style={styles.secondaryButton}
+              onClick={() => setShowIngredientEditor((current) => !current)}
+              disabled={!form.menuItemId}
+            >
+              {showIngredientEditor ? 'Done Editing Ingredients' : 'Edit Ingredients'}
+            </button>
+          </div>
+
+          <div style={styles.tableWrap}>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Ingredient ID</th>
+                  <th style={styles.th}>Ingredient Name</th>
+                  <th style={styles.th}>Quantity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!form.menuItemId ? (
+                  <tr>
+                    <td style={styles.emptyCell} colSpan={3}>
+                      Select a drink from the menu table to view its ingredients.
+                    </td>
                   </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                ) : recipeRows.length === 0 ? (
+                  <tr>
+                    <td style={styles.emptyCell} colSpan={3}>
+                      No ingredients found for this drink yet.
+                    </td>
+                  </tr>
+                ) : (
+                  recipeRows.map((row, idx) => {
+                    const key = row.row_ref ?? `${row.item_inventory_id}-${idx}`;
+                    const selected = String(form.selectedRecipeRowRef) === String(row.row_ref);
+                    return (
+                      <tr
+                        key={key}
+                        style={selected ? styles.selectedRow : undefined}
+                        onClick={() => onSelectRecipeRow(row)}
+                      >
+                        <td style={styles.td}>{row.item_inventory_id}</td>
+                        <td style={styles.td}>{row.ingredient_name}</td>
+                        <td style={styles.td}>{row.quantity}</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
 
-      <div style={styles.employeeFormGrid}>
-        <label style={styles.label}>
-          Component
-          <select
-            style={styles.input}
-            value={form.selectedIngredientId}
-            onChange={(e) => onFormChange('selectedIngredientId', e.target.value)}
-          >
-            <option value="">Select component</option>
-            {ingredientOptions.map((opt) => (
-              <option key={opt.item_inventory_id} value={opt.item_inventory_id}>
-                {opt.name} [{opt.item_category}] (ID {opt.item_inventory_id})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={styles.label}>
-          Recipe Quantity
-          <input
-            style={styles.input}
-            type="number"
-            min="1"
-            step="1"
-            value={form.recipeQuantity}
-            onChange={(e) => onFormChange('recipeQuantity', e.target.value)}
-          />
-        </label>
-        <div style={styles.formActionsRow}>
-          <button type="button" style={styles.primaryButton} onClick={onAddRecipeComponent} disabled={!form.menuItemId || busy.recipeAdd}>
-            {busy.recipeAdd ? 'Adding…' : 'Add Component'}
-          </button>
-          <button type="button" style={styles.secondaryButton} onClick={onUpdateRecipeQuantity} disabled={!form.selectedRecipeRowRef || busy.recipeUpdate}>
-            {busy.recipeUpdate ? 'Updating…' : 'Update Recipe Qty'}
-          </button>
-          <button type="button" style={styles.dangerButton} onClick={onRemoveRecipeComponent} disabled={!form.selectedRecipeRowRef || busy.recipeRemove}>
-            {busy.recipeRemove ? 'Removing…' : 'Remove Component'}
-          </button>
+          {showIngredientEditor ? (
+            <div style={styles.employeeFormGrid}>
+              <label style={styles.label}>
+                Ingredient ID
+                <select
+                  style={styles.input}
+                  value={form.selectedIngredientId}
+                  onChange={(e) => onFormChange('selectedIngredientId', e.target.value)}
+                >
+                  <option value="">Select ingredient</option>
+                  {ingredientOptions.map((opt) => (
+                    <option key={opt.item_inventory_id} value={opt.item_inventory_id}>
+                      {opt.name} [{opt.item_category}] (ID {opt.item_inventory_id})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label style={styles.label}>
+                Recipe Quantity
+                <input
+                  style={styles.input}
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={form.recipeQuantity}
+                  onChange={(e) => onFormChange('recipeQuantity', e.target.value)}
+                />
+              </label>
+
+              <div style={styles.formActionsRow}>
+                <button
+                  type="button"
+                  style={styles.primaryButton}
+                  onClick={onAddRecipeComponent}
+                  disabled={!form.menuItemId || !form.selectedIngredientId || !form.recipeQuantity || busy.recipeAdd}
+                >
+                  {busy.recipeAdd ? 'Adding…' : 'Add Ingredient'}
+                </button>
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  onClick={onUpdateRecipeQuantity}
+                  disabled={!form.selectedRecipeRowRef || busy.recipeUpdate}
+                >
+                  {busy.recipeUpdate ? 'Updating…' : 'Update Ingredient Qty'}
+                </button>
+                <button
+                  type="button"
+                  style={styles.dangerButton}
+                  onClick={onRemoveRecipeComponent}
+                  disabled={!form.selectedRecipeRowRef || busy.recipeRemove}
+                >
+                  {busy.recipeRemove ? 'Removing…' : 'Remove Ingredient'}
+                </button>
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  onClick={onStartNewIngredient}
+                  disabled={!form.menuItemId}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
-      </div>
+      </form>
     </section>
   );
 }
@@ -936,12 +977,11 @@ function ManagerDashboard() {
 
   function selectMenuItemRow(row) {
     setMenuForm((current) => ({
-      ...current,
+      ...EMPTY_MENU_FORM,
       menuItemId: String(row.menu_item_id ?? ''),
       menuItemCategory: String(row.menu_item_category ?? ''),
       pricePerUnit: String(row.price_per_unit ?? ''),
-      recipeQuantity: '',
-      selectedRecipeRowRef: ''
+      recipeQuantity: current.recipeQuantity || '1'
     }));
     loadRecipeForMenuItem(row.menu_item_id);
   }
@@ -986,36 +1026,6 @@ function ManagerDashboard() {
     }
   }
 
-  async function handleUpdateMenuPrice() {
-    if (!menuForm.menuItemId) {
-      setStatus('Select a menu item first.');
-      return;
-    }
-    setBusy((current) => ({ ...current, menuUpdatePrice: true }));
-    try {
-      const payload = await fetchJson(`/api/menu/manage/items/${menuForm.menuItemId}/price`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          pricePerUnit: menuForm.pricePerUnit
-        })
-      });
-      const updated = payload?.item;
-      if (updated) {
-        setMenuItems((current) =>
-          current.map((row) => (String(row.menu_item_id) === String(updated.menu_item_id) ? updated : row))
-        );
-        selectMenuItemRow(updated);
-      } else {
-        await loadMenuItems();
-      }
-      setStatus(updated ? `Updated price for "${updated.menu_item_category}".` : 'Menu price updated.');
-    } catch (error) {
-      setStatus(`Price update failed: ${error.message}`);
-    } finally {
-      setBusy((current) => ({ ...current, menuUpdatePrice: false }));
-    }
-  }
-
   async function handleUpdateMenuItem() {
     if (!menuForm.menuItemId) {
       setStatus('Select a menu item first.');
@@ -1052,22 +1062,51 @@ function ManagerDashboard() {
       setStatus('Select a menu item first.');
       return;
     }
+    if (!menuForm.selectedIngredientId) {
+      setStatus('Select an ingredient ID before adding.');
+      return;
+    }
+    const recipeQty = Number(menuForm.recipeQuantity);
+    if (!Number.isInteger(recipeQty) || recipeQty <= 0) {
+      setStatus('Recipe quantity must be a whole number greater than 0.');
+      return;
+    }
     setBusy((current) => ({ ...current, recipeAdd: true }));
     try {
       await fetchJson(`/api/menu/manage/items/${menuForm.menuItemId}/recipe`, {
         method: 'POST',
         body: JSON.stringify({
           itemInventoryId: menuForm.selectedIngredientId,
-          quantity: menuForm.recipeQuantity
+          quantity: recipeQty
         })
       });
       await loadRecipeForMenuItem(menuForm.menuItemId);
+      setMenuForm((current) => ({
+        ...current,
+        selectedIngredientId: '',
+        recipeQuantity: '1',
+        selectedRecipeRowRef: ''
+      }));
       setStatus('Component added to recipe.');
     } catch (error) {
       setStatus(`Failed to add recipe component: ${error.message}`);
     } finally {
       setBusy((current) => ({ ...current, recipeAdd: false }));
     }
+  }
+
+  function handleStartNewIngredient() {
+    if (!menuForm.menuItemId) {
+      setStatus('Select a menu item first.');
+      return;
+    }
+    setMenuForm((current) => ({
+      ...current,
+      selectedIngredientId: '',
+      selectedRecipeRowRef: '',
+      recipeQuantity: '1'
+    }));
+    setStatus('Ready to add a new ingredient.');
   }
 
   async function handleUpdateRecipeQuantity() {
@@ -1253,37 +1292,6 @@ function ManagerDashboard() {
       setStatus(`Employee creation failed: ${error.message}`);
     } finally {
       setBusy((current) => ({ ...current, employeeCreate: false }));
-    }
-  }
-
-  async function handleUpdateHourlyPay() {
-    if (!employeeEditForm.employeeId) {
-      setStatus('Select an employee first.');
-      return;
-    }
-
-    setBusy((current) => ({ ...current, employeeHourlyUpdate: true }));
-    try {
-      const payload = await fetchJson(`/api/employees/${employeeEditForm.employeeId}/hourly-pay`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          hourlyPay: employeeEditForm.hourlyPay
-        })
-      });
-      const updated = payload?.item;
-      if (updated) {
-        setEmployees((current) =>
-          current.map((row) => (String(row.employee_id) === String(updated.employee_id) ? updated : row))
-        );
-        selectEmployeeRow(updated);
-      } else {
-        await loadEmployees();
-      }
-      setStatus(updated ? `Updated hourly pay for ${updated.first_name} ${updated.last_name}.` : 'Updated hourly pay.');
-    } catch (error) {
-      setStatus(`Hourly pay update failed: ${error.message}`);
-    } finally {
-      setBusy((current) => ({ ...current, employeeHourlyUpdate: false }));
     }
   }
 
@@ -1556,7 +1564,10 @@ function ManagerDashboard() {
                   <button
                     type="button"
                     style={styles.dangerButton}
-                    onClick={downloadZReportCsv}
+                    onClick={() => {
+                      setXReportRows([]);
+                      downloadZReportCsv();
+                    }}
                     disabled={busy.zReport}
                   >
                     {busy.zReport ? 'Preparing…' : 'Download Z-Report CSV'}
@@ -1580,7 +1591,6 @@ function ManagerDashboard() {
               onFormChange={updateEmployeeEditForm}
               onSelectRow={selectEmployeeRow}
               onCreateEmployee={handleCreateEmployee}
-              onUpdateHourlyPay={handleUpdateHourlyPay}
               onUpdateDetails={handleUpdateEmployeeDetails}
               onTerminateEmployee={handleTerminateEmployee}
               onClearForm={clearEmployeeEditForm}
@@ -1610,8 +1620,8 @@ function ManagerDashboard() {
               onSelectMenuRow={selectMenuItemRow}
               onSelectRecipeRow={selectRecipeRow}
               onAddMenuItem={handleAddMenuItem}
-              onUpdatePrice={handleUpdateMenuPrice}
               onUpdateMenuItem={handleUpdateMenuItem}
+              onStartNewIngredient={handleStartNewIngredient}
               onAddRecipeComponent={handleAddRecipeComponent}
               onUpdateRecipeQuantity={handleUpdateRecipeQuantity}
               onRemoveRecipeComponent={handleRemoveRecipeComponent}
@@ -1791,6 +1801,17 @@ const styles = {
     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
     gap: '14px',
     marginTop: '14px'
+  },
+  menuIngredientSection: {
+    gridColumn: '1 / -1',
+    marginTop: '16px',
+    borderTop: '1px solid #eadfd3',
+    paddingTop: '12px'
+  },
+  inventoryPickerWrap: {
+    marginTop: '24px',
+    marginBottom: '14px',
+    maxWidth: '460px'
   },
   formActionsRow: {
     gridColumn: '1 / -1',

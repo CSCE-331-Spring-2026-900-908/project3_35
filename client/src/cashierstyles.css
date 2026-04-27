@@ -1,0 +1,74 @@
+/* Layout Containers */
+.cashier-layout { display: flex; flex-direction: column; gap: 20px; padding: 20px; min-height: 100vh; background: #efe7dc; }
+.main-content-flex { display: flex; gap: 20px; flex: 1; }
+.menu-column { flex: 2; display: flex; flex-direction: column; gap: 15px; }
+
+/* Headers */
+.cashier-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.cashier-header h1 { color: #2f211b; margin: 0; }
+
+/* Grids */
+.pos-menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; align-content: start; overflow-y: auto; max-height: calc(100vh - 150px); }
+/* Container for Sweetness and Ice Level */
+.dual-options-row { display: flex; gap: 40px;  margin-bottom: 25px;
+}
+
+.option-column { flex: 1; 
+}
+
+/* Header styling inside the customizer */
+.option-label { color: #2f211b; margin: 0 0 12px 0; font-size: 1.2rem; font-weight: bold;
+}
+
+/* The 2-column grid for the small percentage/ice buttons */
+.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px;}
+.options-grid .category-btn { width: 100%; padding: 12px 5px; text-align: center;}
+.options-grid .category-btn:last-child:nth-child(odd) {grid-column: 1;}
+.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.toppings-selection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+
+/* Buttons */
+.category-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.category-btn { padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; border: 1px solid #bda99a; background: #ffffff; color: #2f211b; transition: all 0.2s ease-in-out; }
+.category-btn.active { border: 2px solid #6f3c20; background: #fff3e6; color: #6f3c20; }
+.flex-1 { flex: 1; }
+
+/* Drink Cards */
+.drink-card { background: #ffffff; border: 1px solid #e3d8cb; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; min-height: 120px; }
+.drink-card-name { font-size: 18px; color: #2f211b; margin-bottom: 10px; }
+.drink-card-price { font-size: 16px; color: #6f3c20; }
+
+/* Customizer UI */
+.customizer-container { background: #f8f3eb; border-radius: 12px; border: 1px solid #e3d8cb; padding: 20px; display: flex; flex-direction: column; height: 100%; box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+.customizer-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f8f3eb; padding-bottom: 15px; margin-bottom: 15px; }
+.customizer-options-list { flex: 1; overflow-y: auto; padding-right: 10px; display: flex; flex-direction: column; gap: 25px; }
+.customizer-title { margin: 0; color: #2f211b; font-size: 28px; }
+.customizer-total { font-size: 18px; color: #6b5b50; font-weight: bold; }
+.btn-cancel { padding: 12px 24px; background: #fff; border: 2px solid #a33a2b; color: #a33a2b; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+.btn-add-to-cart { width: 100%; padding: 20px; background: #6f3c20; color: #fff; border: none; border-radius: 12px; font-size: 20px; font-weight: bold; cursor: pointer; }
+
+/* Topping Choice Buttons (Inside Customizer) */
+.topping-choice-btn { padding: 15px; border-radius: 12px; border: 2px solid #e3d8cb; background: #ffffff; color: #2f211b; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: all 0.1s; }
+.topping-choice-btn.active { border: 3px solid #6f3c20; background: #fff3e6; color: #6f3c20; }
+
+/* Sidebar & Cart */
+.cart-sidebar { flex: 1; min-width: 350px; background: #fff; border-radius: 12px; border: 1px solid #e3d8cb; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+.cart-header { background: #f8f3eb; padding: 20px; border-bottom: 1px solid #e3d8cb; }
+.customer-input-group { display: flex; flex-direction: column; gap: 5px; }
+.customer-input { padding: 10px; border-radius: 8px; border: 1px solid #bda99a; font-size: 16px; outline: none; }
+.cart-items-scroll { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+.cart-item-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #e3d8cb; padding-bottom: 15px; }
+.item-meta { display: block; font-size: 14px; color: #6b5b50; margin-top: 4px; }
+.item-price-actions { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; }
+.btn-remove-item { background: transparent; border: none; color: #a33a2b; cursor: pointer; font-size: 14px; margin-top: 8px; font-weight: bold; }
+
+/* Totals Panel */
+.totals-panel { background: #f8f3eb; padding: 20px; border-top: 1px solid #e3d8cb; }
+.totals-breakdown { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+.totals-row { display: flex; justify-content: space-between; color: #6b5b50; font-size: 16px; }
+.grand-total-row { display: flex; justify-content: space-between; color: #2f211b; font-size: 24px; font-weight: bold; border-top: 1px solid #e3d8cb; padding-top: 10px; margin-top: 5px; }
+.action-row { display: flex; gap: 10px; }
+.btn-clear-order { flex: 1; padding: 15px; background: #ffffff; border: 2px solid #a33a2b; color: #a33a2b; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+.btn-submit-order { flex: 2; padding: 15px; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; }
+.btn-submit-order:not(:disabled) { background: #6f3c20; cursor: pointer; }
+.btn-submit-order:disabled { background: #bda99a; cursor: not-allowed; }
