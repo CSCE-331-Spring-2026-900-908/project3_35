@@ -42,6 +42,9 @@ const baseText = {
   toppings: 'Toppings',
   note: 'Note',
   remove: 'Remove',
+  quantity: 'Quantity',
+  increaseQuantity: '+',
+  decreaseQuantity: '-',
   name: 'Name',
   customerNamePlaceholder: 'Customer name (Optional)',
   pickupTime: 'Pickup Time',
@@ -825,7 +828,7 @@ export default function CustomerPage() {
 
   // Calculates order subtotal, tax, and total.
   const subtotal = useMemo(
-    () => Number(cart.reduce((sum, item) => sum + Number(item.total || 0), 0).toFixed(2)),
+    () => Number(cart.reduce((sum, item) => sum + Number(item.total || 0) * Number(item.quantity || 1), 0).toFixed(2)),
     [cart]
   );
   const tax = Number((subtotal * TAX_RATE).toFixed(2));
@@ -1045,6 +1048,14 @@ export default function CustomerPage() {
 
       speak(message);
     }
+  }
+
+  // Updates quantity for a cart item.
+  function updateCartItemQuantity(id, nextQuantity) {
+    const safeQuantity = Math.max(1, Number(nextQuantity || 1));
+    setCart((current) =>
+      current.map((item) => (item.id === id ? { ...item, quantity: safeQuantity } : item))
+    );
   }
 
   // Closes the customization modal.
@@ -1422,6 +1433,7 @@ export default function CustomerPage() {
               checkoutForm={checkoutForm}
               onCheckoutChange={handleCheckoutChange}
               onCheckoutFocus={speakCheckoutFocus}
+              onUpdateItemQuantity={updateCartItemQuantity}
               onRemoveItem={removeCartItem}
               onSubmitOrder={handleSubmitOrder}
               storeLocations={STORE_LOCATIONS}
