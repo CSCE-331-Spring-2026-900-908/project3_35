@@ -205,9 +205,14 @@ export function createAuthRouter(pool) {
       const employee = normalizeEmployee(employeeRow);
       const user = {
         ...employee,
-        role: /manager/i.test(employee.jobTitle) ? 'manager' : 'employee'
+        role: /manager/i.test(employee.jobTitle) ? 'manager' : 'employee',
+        authMethod: 'pin'
       };
-      const accessToken = signAccessToken(employee);
+      const accessToken = signAccessToken(employee, {
+        payload: {
+          authMethod: 'pin'
+        }
+      });
 
       return response.json({ accessToken, user });
     } catch (error) {
@@ -294,9 +299,14 @@ export function createAuthRouter(pool) {
       };
       const user = {
         ...resolvedEmployee,
-        role: /manager/i.test(resolvedEmployee.jobTitle) ? 'manager' : 'employee'
+        role: /manager/i.test(resolvedEmployee.jobTitle) ? 'manager' : 'employee',
+        authMethod: 'google'
       };
-      const accessToken = signAccessToken(resolvedEmployee);
+      const accessToken = signAccessToken(resolvedEmployee, {
+        payload: {
+          authMethod: 'google'
+        }
+      });
 
       return response.redirect(encodeSessionRedirect({ accessToken, user }));
     } catch (error) {

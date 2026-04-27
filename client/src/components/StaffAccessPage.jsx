@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { clearSession, fetchCurrentUser, getStoredToken, getStoredUser, loginWithPin } from '../auth';
+import { beginGoogleLogin, clearSession, fetchCurrentUser, getStoredToken, getStoredUser, loginWithPin } from '../auth';
 
 function roleLabel(requiredRole) {
   return requiredRole === 'manager' ? 'manager' : 'staff';
@@ -11,6 +11,8 @@ export default function StaffAccessPage({
   title,
   description,
   accessDeniedMessage,
+  authMethod = 'google',
+  requiredAuthMethod = null,
   children
 }) {
   const [authState, setAuthState] = useState('checking');
@@ -71,6 +73,7 @@ export default function StaffAccessPage({
   const hasRequiredRole = user && (requiredRole === 'employee'
     ? ['employee', 'manager'].includes(user.role)
     : user.role === 'manager');
+  const hasRequiredAuthMethod = !requiredAuthMethod || user?.authMethod === requiredAuthMethod;
 
   if (authState === 'checking') {
     return (
@@ -90,49 +93,88 @@ export default function StaffAccessPage({
           <p style={styles.kicker}>Secured Staff Access</p>
           <h1 style={styles.title}>{title}</h1>
           <p style={styles.subtitle}>{description}</p>
-          <form style={styles.form} onSubmit={handleLoginSubmit}>
-            <p style={styles.helperText}>
-              Sign in with the email on your employee record and your 4-digit PIN.
-            </p>
-            <label style={styles.field}>
-              <span style={styles.fieldLabel}>Email</span>
-              <input
-                style={styles.input}
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="employee@company.com"
-                autoComplete="username"
-                required
-              />
-            </label>
-            <label style={styles.field}>
-              <span style={styles.fieldLabel}>4-digit PIN</span>
-              <input
-                style={styles.input}
-                type="password"
-                value={pin}
-                onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))}
-                inputMode="numeric"
-                pattern="\d{4}"
-                placeholder="1234"
-                autoComplete="current-password"
-                required
-              />
-            </label>
-            {error ? <p style={styles.error}>{error}</p> : null}
-            <button style={styles.button} type="submit" disabled={isSubmitting}>
-              <span>{isSubmitting ? 'Signing In…' : 'Sign In With PIN'}</span>
-            </button>
-          </form>
+          {authMethod === 'pin' ? (
+            <form style={styles.form} onSubmit={handleLoginSubmit}>
+              <p style={styles.helperText}>
+                Sign in with the email on your employee record and your 4-digit PIN.
+              </p>
+              <label style={styles.field}>
+                <span style={styles.fieldLabel}>Email</span>
+                <input
+                  style={styles.input}
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="employee@company.com"
+                  autoComplete="username"
+                  required
+                />
+              </label>
+              <label style={styles.field}>
+                <span style={styles.fieldLabel}>4-digit PIN</span>
+                <input
+                  style={styles.input}
+                  type="password"
+                  value={pin}
+                  onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))}
+                  inputMode="numeric"
+                  pattern="\d{4}"
+                  placeholder="1234"
+                  autoComplete="current-password"
+                  required
+                />
+              </label>
+              {error ? <p style={styles.error}>{error}</p> : null}
+              <button style={styles.button} type="submit" disabled={isSubmitting}>
+                <span>{isSubmitting ? 'Signing In…' : 'Sign In With PIN'}</span>
+              </button>
+            </form>
+          ) : (
+            <div style={styles.form}>
+              <p style={styles.helperText}>
+                Continue with your staff Google account. That Google email must match an employee record in the
+                backend database.
+              </p>
+              {error ? <p style={styles.error}>{error}</p> : null}
+              <button
+                style={styles.button}
+                type="button"
+                onClick={() => beginGoogleLogin(window.location.pathname)}
+              >
+                <span style={styles.buttonIcon} aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="20" height="20" role="img" focusable="false">
+                    <path
+                      fill="#EA4335"
+                      d="M12 10.2v3.9h5.4c-.2 1.3-1.5 3.9-5.4 3.9-3.3 0-6-2.8-6-6.1s2.7-6.1 6-6.1c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.1 14.7 2.2 12 2.2c-5.4 0-9.8 4.4-9.8 9.8s4.4 9.8 9.8 9.8c5.7 0 9.5-4 9.5-9.6 0-.6-.1-1.1-.2-1.6H12Z"
+                    />
+                    <path
+                      fill="#4285F4"
+                      d="M3.3 7.4 6.5 9.8C7.4 7.5 9.5 5.9 12 5.9c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.1 14.7 2.2 12 2.2 8.2 2.2 4.9 4.4 3.3 7.4Z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M12 21.8c2.6 0 4.8-.9 6.4-2.5l-3.1-2.4c-.8.5-1.9.9-3.3.9-3.8 0-5.2-2.6-5.4-3.8l-3.1 2.4c1.6 3.1 4.9 5.4 8.5 5.4Z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M3.3 16.6 6.5 14.2c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2L3.3 7.8c-.7 1.3-1.1 2.8-1.1 4.4s.4 3.1 1.1 4.4Z"
+                    />
+                  </svg>
+                </span>
+                <span>Login with Google</span>
+              </button>
+            </div>
+          )}
           <Link to="/" style={styles.link}>Back to portal</Link>
         </div>
       </div>
     );
   }
 
-  if (!hasRequiredRole) {
-    const fallbackAccessDeniedMessage = `You are signed in as ${user.firstName} ${user.lastName} (${user.jobTitle}), but this page requires ${roleLabel(requiredRole)} access.`;
+  if (!hasRequiredRole || !hasRequiredAuthMethod) {
+    const fallbackAccessDeniedMessage = !hasRequiredRole
+      ? `You are signed in as ${user.firstName} ${user.lastName} (${user.jobTitle}), but this page requires ${roleLabel(requiredRole)} access.`
+      : `This page requires ${requiredAuthMethod} sign-in. Please sign out and sign in with ${requiredAuthMethod === 'google' ? 'Google OAuth' : 'your PIN'}.`;
 
     return (
       <div style={styles.page}>
@@ -190,7 +232,11 @@ export default function StaffAccessPage({
 
         <div style={styles.panel}>
           <h2 style={styles.sectionTitle}>Access granted</h2>
-          <p style={styles.panelText}>PIN authentication is active for this section, with a server-issued staff session.</p>
+          <p style={styles.panelText}>
+            {authMethod === 'pin'
+              ? 'PIN authentication is active for this section, with a server-issued staff session.'
+              : 'Google OAuth is active for this section, with a server-issued staff session.'}
+          </p>
         </div>
 
         <div style={styles.actions}>
@@ -322,6 +368,11 @@ const styles = {
     color: '#fff',
     fontWeight: 700,
     cursor: 'pointer'
+  },
+  buttonIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   buttonIcon: {
     display: 'inline-flex',

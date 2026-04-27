@@ -477,6 +477,7 @@ function CashierDashboard() {
 export default function CashierPage() {
   return (
     <StaffAccessPage
+      authMethod="pin"
       requiredRole="employee"
       title="Cashier Interface"
       description="Staff must sign in before accessing the counter-facing POS experience."

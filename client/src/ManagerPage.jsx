@@ -994,6 +994,8 @@ const styles = {
 export default function ManagerPage() {
   return (
     <StaffAccessPage
+      authMethod="google"
+      requiredAuthMethod="google"
       requiredRole="manager"
       title="Manager Dashboard"
       description="Managers must sign in before accessing reporting, inventory, and administration tools."
