@@ -888,7 +888,8 @@ function ManagerDashboard() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      setStatus('Downloaded Z-Report CSV.');
+      setXReportRows([]);
+      setStatus('Downloaded Z-Report CSV and cleared X-Report data.');
     } catch (error) {
       setStatus(`Z-Report download failed: ${error.message}`);
     } finally {
