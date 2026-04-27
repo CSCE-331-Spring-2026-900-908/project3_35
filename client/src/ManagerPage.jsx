@@ -15,6 +15,7 @@ const SCHEDULE_OPTIONS = [
   'Thu-Mon 9am-5pm',
   'Inactive'
 ];
+const INVENTORY_CATEGORY_OPTIONS = ['supply', 'ingredient', 'packaging', 'seasonal'];
 
 const EMPTY_EMPLOYEE_FORM = {
   jobTitle: 'Cashier',
@@ -27,6 +28,14 @@ const EMPTY_EMPLOYEE_FORM = {
   benefits: 'None',
   email: '',
   pin: ''
+};
+
+const EMPTY_INVENTORY_FORM = {
+  itemInventoryId: '',
+  name: '',
+  quantityAvailable: '',
+  pricePerUnit: '',
+  itemCategory: 'supply'
 };
 
 function pad2(value) {
@@ -294,8 +303,147 @@ function EmployeeCreatePanel({ form, onChange, onSubmit, busy }) {
   );
 }
 
+function InventoryManagePanel({
+  rows,
+  form,
+  onFormChange,
+  onAddItem,
+  onUpdateItem,
+  onSelectRow,
+  onClearForm,
+  busy
+}) {
+  return (
+    <section style={styles.panel}>
+      <div style={styles.panelHeader}>
+        <div>
+          <h2 style={styles.panelTitle}>Inventory Management</h2>
+          <p style={styles.hint}>Select an item to edit stock, price, and category, or add a new one.</p>
+        </div>
+        <div style={styles.panelMeta}>{rows.length} items</div>
+      </div>
+
+      <div style={styles.tableWrap}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>Item ID</th>
+              <th style={styles.th}>Item Name</th>
+              <th style={styles.th}>Stock Quantity</th>
+              <th style={styles.th}>Unit Price</th>
+              <th style={styles.th}>Category</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td style={styles.emptyCell} colSpan={5}>
+                  No inventory items found.
+                </td>
+              </tr>
+            ) : (
+              rows.map((row) => {
+                const selected = String(form.itemInventoryId) === String(row.item_inventory_id);
+                return (
+                  <tr
+                    key={row.item_inventory_id}
+                    style={selected ? styles.selectedRow : undefined}
+                    onClick={() => onSelectRow(row)}
+                  >
+                    <td style={styles.td}>{row.item_inventory_id}</td>
+                    <td style={styles.td}>{row.name}</td>
+                    <td style={styles.td}>{Number(row.quantity_available).toLocaleString()}</td>
+                    <td style={styles.td}>{formatMoney(row.price_per_unit)}</td>
+                    <td style={styles.td}>{row.item_category}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <form style={styles.inventoryFormGrid} onSubmit={onAddItem}>
+        <label style={styles.label}>
+          Item ID
+          <input style={styles.input} value={form.itemInventoryId} disabled placeholder="Auto-generated" />
+        </label>
+
+        <label style={styles.label}>
+          Item Name
+          <input
+            style={styles.input}
+            value={form.name}
+            onChange={(event) => onFormChange('name', event.target.value)}
+            required
+          />
+        </label>
+
+        <label style={styles.label}>
+          Stock Quantity
+          <input
+            style={styles.input}
+            type="number"
+            min="0"
+            step="1"
+            value={form.quantityAvailable}
+            onChange={(event) => onFormChange('quantityAvailable', event.target.value)}
+            required
+          />
+        </label>
+
+        <label style={styles.label}>
+          Unit Price
+          <input
+            style={styles.input}
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.pricePerUnit}
+            onChange={(event) => onFormChange('pricePerUnit', event.target.value)}
+            required
+          />
+        </label>
+
+        <label style={styles.label}>
+          Category
+          <select
+            style={styles.input}
+            value={form.itemCategory}
+            onChange={(event) => onFormChange('itemCategory', event.target.value)}
+          >
+            {INVENTORY_CATEGORY_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div style={styles.formActionsRow}>
+          <button type="submit" style={styles.primaryButton} disabled={busy.inventoryCreate}>
+            {busy.inventoryCreate ? 'Adding…' : 'Add New Item'}
+          </button>
+          <button
+            type="button"
+            style={styles.secondaryButton}
+            onClick={onUpdateItem}
+            disabled={!form.itemInventoryId || busy.inventoryUpdate}
+          >
+            {busy.inventoryUpdate ? 'Updating…' : 'Update Stock/Price/Category'}
+          </button>
+          <button type="button" style={styles.secondaryButton} onClick={onClearForm}>
+            Clear Form
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
 function ManagerDashboard() {
   const [inventory, setInventory] = useState([]);
+  const [inventoryForm, setInventoryForm] = useState(EMPTY_INVENTORY_FORM);
   const [orders, setOrders] = useState([]);
   const [usageRows, setUsageRows] = useState([]);
   const [xReportRows, setXReportRows] = useState([]);
@@ -310,7 +458,9 @@ function ManagerDashboard() {
     xReport: false,
     zReport: false,
     employees: false,
-    employeeCreate: false
+    employeeCreate: false,
+    inventoryCreate: false,
+    inventoryUpdate: false
   });
 
   const [status, setStatus] = useState('Ready.');
@@ -461,6 +611,93 @@ function ManagerDashboard() {
     await Promise.all([loadInventory(), loadOrders(), loadEmployees()]);
   }
 
+  function updateInventoryForm(field, value) {
+    setInventoryForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  }
+
+  function selectInventoryRow(row) {
+    setInventoryForm({
+      itemInventoryId: String(row.item_inventory_id ?? ''),
+      name: String(row.name ?? ''),
+      quantityAvailable: String(row.quantity_available ?? ''),
+      pricePerUnit: String(row.price_per_unit ?? ''),
+      itemCategory: String(row.item_category ?? 'supply')
+    });
+  }
+
+  function clearInventoryForm() {
+    setInventoryForm(EMPTY_INVENTORY_FORM);
+  }
+
+  async function handleAddInventoryItem(event) {
+    event.preventDefault();
+    setBusy((current) => ({ ...current, inventoryCreate: true }));
+    try {
+      const payload = await fetchJson('/api/inventory', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: inventoryForm.name,
+          quantityAvailable: inventoryForm.quantityAvailable,
+          pricePerUnit: inventoryForm.pricePerUnit,
+          itemCategory: inventoryForm.itemCategory
+        })
+      });
+      const createdItem = payload?.item;
+      if (createdItem) {
+        setInventory((current) =>
+          [...current, createdItem].sort((a, b) => Number(a.item_inventory_id) - Number(b.item_inventory_id))
+        );
+      } else {
+        await loadInventory();
+      }
+      clearInventoryForm();
+      setStatus(createdItem ? `Added inventory item "${createdItem.name}".` : 'Added inventory item.');
+    } catch (error) {
+      setStatus(`Failed to add inventory item: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, inventoryCreate: false }));
+    }
+  }
+
+  async function handleUpdateInventoryItem() {
+    if (!inventoryForm.itemInventoryId) {
+      setStatus('Select an inventory item first.');
+      return;
+    }
+
+    setBusy((current) => ({ ...current, inventoryUpdate: true }));
+    try {
+      const payload = await fetchJson(`/api/inventory/${inventoryForm.itemInventoryId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: inventoryForm.name,
+          quantityAvailable: inventoryForm.quantityAvailable,
+          pricePerUnit: inventoryForm.pricePerUnit,
+          itemCategory: inventoryForm.itemCategory
+        })
+      });
+      const updated = payload?.item;
+      if (updated) {
+        setInventory((current) =>
+          current.map((row) =>
+            String(row.item_inventory_id) === String(updated.item_inventory_id) ? updated : row
+          )
+        );
+        selectInventoryRow(updated);
+      } else {
+        await loadInventory();
+      }
+      setStatus(updated ? `Updated "${updated.name}".` : 'Inventory item updated.');
+    } catch (error) {
+      setStatus(`Failed to update inventory item: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, inventoryUpdate: false }));
+    }
+  }
+
   function updateEmployeeForm(field, value) {
     setEmployeeForm((current) => ({
       ...current,
@@ -582,14 +819,15 @@ function ManagerDashboard() {
                 {busy.inventory ? 'Loading…' : 'Reload inventory'}
               </button>
             </div>
-            <DataTable
-              title="Inventory Items"
+            <InventoryManagePanel
               rows={inventory}
-              preferredOrder={['item_inventory_id', 'name', 'item_category', 'quantity_available', 'price_per_unit']}
-              formatters={{
-                price_per_unit: (v) => formatMoney(v),
-                quantity_available: (v) => (v === null || v === undefined ? '' : Number(v).toLocaleString())
-              }}
+              form={inventoryForm}
+              onFormChange={updateInventoryForm}
+              onAddItem={handleAddInventoryItem}
+              onUpdateItem={handleUpdateInventoryItem}
+              onSelectRow={selectInventoryRow}
+              onClearForm={clearInventoryForm}
+              busy={busy}
             />
           </div>
         ) : null}
@@ -847,6 +1085,10 @@ const styles = {
     color: '#2f211b',
     verticalAlign: 'top'
   },
+  selectedRow: {
+    background: '#fff3e6',
+    cursor: 'pointer'
+  },
   emptyCell: {
     padding: '14px 12px',
     color: '#6b5b50'
@@ -897,10 +1139,18 @@ const styles = {
     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
     gap: '14px'
   },
+  inventoryFormGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: '14px',
+    marginTop: '14px'
+  },
   formActionsRow: {
     gridColumn: '1 / -1',
     display: 'flex',
     justifyContent: 'flex-start',
+    gap: '10px',
+    flexWrap: 'wrap',
     paddingTop: '6px'
   },
   primaryButton: {
