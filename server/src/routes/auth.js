@@ -12,6 +12,18 @@ function normalizeEmployee(row) {
   };
 }
 
+function cleanString(value) {
+  return String(value ?? '').trim();
+}
+
+function normalizeEmail(value) {
+  return cleanString(value).toLowerCase();
+}
+
+function isValidPin(value) {
+  return /^\d{4}$/.test(String(value ?? ''));
+}
+
 function getGoogleConfig() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -137,11 +149,73 @@ async function fetchGoogleProfile(idToken) {
 export function createAuthRouter(pool) {
   const router = Router();
 
-  router.post('/login', (_request, response) => {
-    return response.status(410).json({
-      error: 'Password login has been removed.',
-      details: 'Use Google OAuth by visiting /api/auth/google/start.'
-    });
+  router.post('/login', async (request, response) => {
+    if (!pool) {
+      return response.status(503).json({
+        error: 'Database is not configured.',
+        details: 'Employee login requires a PostgreSQL connection.'
+      });
+    }
+
+    const email = normalizeEmail(request.body?.email);
+    const pin = cleanString(request.body?.pin);
+
+    if (!email || !email.includes('@')) {
+      return response.status(400).json({
+        error: 'A valid email is required.'
+      });
+    }
+
+    if (!isValidPin(pin)) {
+      return response.status(400).json({
+        error: 'PIN must be exactly 4 digits.'
+      });
+    }
+
+    try {
+      const result = await pool.query(
+        `
+          SELECT
+            employee_id,
+            email,
+            first_name,
+            last_name,
+            job_title,
+            password_hash
+          FROM employee
+          WHERE LOWER(email) = $1
+          LIMIT 1
+        `,
+        [email]
+      );
+
+      if (result.rows.length === 0) {
+        return response.status(401).json({
+          error: 'Invalid email or PIN.'
+        });
+      }
+
+      const employeeRow = result.rows[0];
+      if (String(employeeRow.password_hash || '') !== pin) {
+        return response.status(401).json({
+          error: 'Invalid email or PIN.'
+        });
+      }
+
+      const employee = normalizeEmployee(employeeRow);
+      const user = {
+        ...employee,
+        role: /manager/i.test(employee.jobTitle) ? 'manager' : 'employee'
+      };
+      const accessToken = signAccessToken(employee);
+
+      return response.json({ accessToken, user });
+    } catch (error) {
+      return response.status(500).json({
+        error: 'Sign-in failed.',
+        details: error.message
+      });
+    }
   });
 
   router.get('/google/start', (request, response) => {

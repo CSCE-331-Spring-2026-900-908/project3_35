@@ -56,6 +56,29 @@ export function beginGoogleLogin(nextPath = '/') {
   window.location.assign(apiUrl('/api/auth/google/start'));
 }
 
+export async function loginWithPin({ email, pin, nextPath = '/' }) {
+  const response = await fetch(apiUrl('/api/auth/login'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email, pin })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.details || payload.error || 'PIN sign-in failed.');
+  }
+
+  if (!payload.accessToken || !payload.user) {
+    throw new Error('PIN sign-in did not return a complete session.');
+  }
+
+  storeSession(payload.accessToken, payload.user);
+  storePostLoginPath(nextPath);
+  return payload.user;
+}
+
 export function completeGoogleLoginFromHash(hash = window.location.hash) {
   const params = new URLSearchParams(String(hash || '').replace(/^#/, ''));
   const error = params.get('error');

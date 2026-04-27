@@ -25,7 +25,8 @@ const EMPTY_EMPLOYEE_FORM = {
   startDate: new Date().toISOString().slice(0, 10),
   hourlyPay: '',
   benefits: 'None',
-  email: ''
+  email: '',
+  pin: ''
 };
 
 function pad2(value) {
@@ -142,7 +143,7 @@ function EmployeeCreatePanel({ form, onChange, onSubmit, busy }) {
         <div>
           <h2 style={styles.panelTitle}>Create Employee</h2>
           <p style={styles.hint}>
-            Add a new manager, cashier, or other staff member. Their Google sign-in email must match this email.
+            Add a new manager, cashier, or other staff member, then assign a 4-digit PIN for sign-in.
           </p>
         </div>
         <div style={styles.panelMeta}>Manager-only action</div>
@@ -193,6 +194,20 @@ function EmployeeCreatePanel({ form, onChange, onSubmit, busy }) {
             value={form.email}
             onChange={(event) => onChange('email', event.target.value)}
             placeholder="employee@company.com"
+            required
+          />
+        </label>
+
+        <label style={styles.label}>
+          4-Digit PIN
+          <input
+            style={styles.input}
+            type="password"
+            inputMode="numeric"
+            pattern="\d{4}"
+            value={form.pin}
+            onChange={(event) => onChange('pin', event.target.value.replace(/\D/g, '').slice(0, 4))}
+            placeholder="1234"
             required
           />
         </label>
@@ -469,7 +484,8 @@ function ManagerDashboard() {
           startDate: employeeForm.startDate,
           hourlyPay: employeeForm.hourlyPay,
           benefits: employeeForm.benefits,
-          email: employeeForm.email
+          email: employeeForm.email,
+          pin: employeeForm.pin
         })
       });
 

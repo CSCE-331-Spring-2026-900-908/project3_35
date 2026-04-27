@@ -42,6 +42,10 @@ function normalizeOptionalString(value) {
   return cleaned ? cleaned : null;
 }
 
+function isValidPin(value) {
+  return /^\d{4}$/.test(String(value ?? ''));
+}
+
 function validateEmployeePayload(payload) {
   const employee = {
     jobTitle: cleanString(payload.jobTitle),
@@ -91,10 +95,15 @@ function validateEmployeePayload(payload) {
     return { error: 'A valid staff email is required.' };
   }
 
+  if (!isValidPin(payload.pin)) {
+    return { error: 'A 4-digit PIN is required.' };
+  }
+
   return {
     employee: {
       ...employee,
-      hourlyPay: employee.hourlyPay.toFixed(2)
+      hourlyPay: employee.hourlyPay.toFixed(2),
+      pin: cleanString(payload.pin)
     }
   };
 }
@@ -190,7 +199,7 @@ export function createEmployeesRouter(pool) {
           employee.hourlyPay,
           employee.benefits,
           employee.email,
-          normalizeOptionalString(request.body?.passwordHash)
+          employee.pin
         ]
       );
 
