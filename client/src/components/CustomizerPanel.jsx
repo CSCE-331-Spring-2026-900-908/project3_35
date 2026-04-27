@@ -6,7 +6,11 @@ const ICE_CHOICES = ['No Ice', 'Light Ice', 'Regular Ice'];
 
 const TTS_RATE = 1.45;
 
-function speakText(text) {
+function speakText(text, enabled) {
+  if (!enabled) {
+    return;
+  }
+
   if (!('speechSynthesis' in window)) {
     return;
   }
@@ -20,7 +24,7 @@ function speakText(text) {
   window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(cleaned);
-  utterance.rate = 1.4;
+  utterance.rate = TTS_RATE;
   utterance.pitch = 1;
   utterance.volume = 1;
 
@@ -68,7 +72,8 @@ export default function CustomizerPanel({
   onAddToCart,
   labels,
   translateSize,
-  translateIce
+  translateIce,
+  ttsEnabled = false
 }) {
   const [toppingHelperOpen, setToppingHelperOpen] = useState(false);
   const [activeToppingIndex, setActiveToppingIndex] = useState(0);
@@ -92,7 +97,7 @@ export default function CustomizerPanel({
     const selectedToppingsText = buildSelectedToppingsSummary(item, selection);
     const message = `${item.displayName || item.name}. Size ${translateSize(selection.size)}. Sweetness ${selection.sweetness}. Ice ${translateIce(selection.ice)}. Drink total $${selection.total.toFixed(2)}. ${selectedToppingsText}`;
 
-    speakText(message);
+    speakText(message, ttsEnabled);
   }
 
   function toggleToppingHelper() {
@@ -104,7 +109,7 @@ export default function CustomizerPanel({
     }
 
     if (toppings.length === 0) {
-      speakText('This drink has no available toppings.');
+      speakText('This drink has no available toppings.', ttsEnabled);
       return;
     }
 
@@ -114,13 +119,14 @@ export default function CustomizerPanel({
         activeToppingIndex,
         toppings.length,
         activeToppingSelected
-      )}`
+      )}`,
+      ttsEnabled
     );
   }
 
   function readCurrentTopping() {
     if (!activeTopping) {
-      speakText('This drink has no available toppings.');
+      speakText('This drink has no available toppings.', ttsEnabled);
       return;
     }
 
@@ -130,13 +136,14 @@ export default function CustomizerPanel({
         activeToppingIndex,
         toppings.length,
         activeToppingSelected
-      )
+      ),
+      ttsEnabled
     );
   }
 
   function goToPreviousTopping() {
     if (toppings.length === 0) {
-      speakText('This drink has no available toppings.');
+      speakText('This drink has no available toppings.', ttsEnabled);
       return;
     }
 
@@ -146,12 +153,12 @@ export default function CustomizerPanel({
 
     setActiveToppingIndex(nextIndex);
 
-    speakText(buildToppingDescription(nextTopping, nextIndex, toppings.length, nextSelected));
+    speakText(buildToppingDescription(nextTopping, nextIndex, toppings.length, nextSelected), ttsEnabled);
   }
 
   function goToNextTopping() {
     if (toppings.length === 0) {
-      speakText('This drink has no available toppings.');
+      speakText('This drink has no available toppings.', ttsEnabled);
       return;
     }
 
@@ -161,12 +168,12 @@ export default function CustomizerPanel({
 
     setActiveToppingIndex(nextIndex);
 
-    speakText(buildToppingDescription(nextTopping, nextIndex, toppings.length, nextSelected));
+    speakText(buildToppingDescription(nextTopping, nextIndex, toppings.length, nextSelected), ttsEnabled);
   }
 
   function toggleCurrentTopping() {
     if (!activeTopping) {
-      speakText('This drink has no available toppings.');
+      speakText('This drink has no available toppings.', ttsEnabled);
       return;
     }
 
@@ -179,17 +186,18 @@ export default function CustomizerPanel({
     speakText(
       wasSelected
         ? `${name} removed. Price ${price}.`
-        : `${name} added. Price ${price}.`
+        : `${name} added. Price ${price}.`,
+      ttsEnabled
     );
   }
 
   function readSelectedToppings() {
-    speakText(buildSelectedToppingsSummary(item, selection));
+    speakText(buildSelectedToppingsSummary(item, selection), ttsEnabled);
   }
 
   function readAllToppings() {
     if (toppings.length === 0) {
-      speakText('This drink has no available toppings.');
+      speakText('This drink has no available toppings.', ttsEnabled);
       return;
     }
 
@@ -205,12 +213,12 @@ export default function CustomizerPanel({
       })
       .join(' ');
 
-    speakText(`Available toppings. ${toppingText}`);
+    speakText(`Available toppings. ${toppingText}`, ttsEnabled);
   }
 
   function clearSelectedToppings() {
     if (selection.toppings.length === 0) {
-      speakText('No toppings are currently selected.');
+      speakText('No toppings are currently selected.', ttsEnabled);
       return;
     }
 
@@ -218,16 +226,10 @@ export default function CustomizerPanel({
       onToggleTopping(toppingName);
     });
 
-    speakText('All toppings removed.');
+    speakText('All toppings removed.', ttsEnabled);
   }
 
-  function addToCartWithSpeech() {
-    const selectedToppingsText = buildSelectedToppingsSummary(item, selection);
-
-    speakText(
-      `${item.displayName || item.name} added to cart. Size ${translateSize(selection.size)}. Sweetness ${selection.sweetness}. Ice ${translateIce(selection.ice)}. ${selectedToppingsText} Drink total $${selection.total.toFixed(2)}.`
-    );
-
+  function addToCartWithoutForcedSpeech() {
     onAddToCart();
   }
 
@@ -410,7 +412,7 @@ export default function CustomizerPanel({
             <span>{labels.drinkTotal}</span>
             <strong>${selection.total.toFixed(2)}</strong>
           </div>
-          <button type="button" className="button button--primary" onClick={addToCartWithSpeech}>
+          <button type="button" className="button button--primary" onClick={addToCartWithoutForcedSpeech}>
             {labels.addToCart}
           </button>
         </div>
