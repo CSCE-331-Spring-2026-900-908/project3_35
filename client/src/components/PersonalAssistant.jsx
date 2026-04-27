@@ -152,6 +152,7 @@ export default function PersonalAssistant({
         className="personal-assistant__launcher"
         aria-expanded={open}
         aria-controls="personal-assistant-panel"
+        aria-haspopup="dialog"
         onClick={() => setOpen((value) => !value)}
       >
         <span className="personal-assistant__launcher-icon" aria-hidden>
@@ -160,8 +161,14 @@ export default function PersonalAssistant({
         <span className="personal-assistant__launcher-text">{title}</span>
       </button>
 
-      {open ? (
-        <div className="personal-assistant__panel" id="personal-assistant-panel" role="dialog" aria-label={title}>
+      <div
+        className="personal-assistant__panel"
+        id="personal-assistant-panel"
+        role="dialog"
+        aria-label={title}
+        hidden={!open}
+        aria-hidden={!open}
+      >
           <div className="personal-assistant__header">
             <div>
               <p className="personal-assistant__eyebrow">Gemini</p>
@@ -222,8 +229,7 @@ export default function PersonalAssistant({
               {sendLabel}
             </button>
           </form>
-        </div>
-      ) : null}
+      </div>
     </div>
   );
 }
