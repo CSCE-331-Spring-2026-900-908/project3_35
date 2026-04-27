@@ -2,7 +2,27 @@ function pad2(value) {
   return String(value).padStart(2, '0');
 }
 
-const REPORT_TIME_ZONE = process.env.REPORT_TIME_ZONE || process.env.TZ || 'America/Chicago';
+function resolveReportTimeZone() {
+  const candidates = [
+    process.env.REPORT_TIME_ZONE,
+    process.env.TZ,
+    'America/Chicago'
+  ]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+
+  for (const candidate of candidates) {
+    try {
+      Intl.DateTimeFormat('en-US', { timeZone: candidate }).format(new Date());
+      return candidate;
+    } catch (_error) {
+    }
+  }
+
+  return 'America/Chicago';
+}
+
+const REPORT_TIME_ZONE = resolveReportTimeZone();
 
 function getBusinessDateParts(date = new Date()) {
   const value = date instanceof Date ? date : new Date(date);
