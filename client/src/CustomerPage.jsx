@@ -86,7 +86,7 @@ const baseText = {
   iceLevel: 'Ice level',
   specialInstructions: 'Special Instructions',
   specialInstructionsPlaceholder: 'Example: less boba, extra creamy foam',
-  drinkTotal: 'Drink total',
+  drinkTotal: 'Drink Total: ',
   addToCart: 'Add To Cart',
   orderConfirmed: 'Order confirmed. Ticket {orderNumber} is in progress.',
   addedToCart: '{itemName} added to cart.',
@@ -1385,32 +1385,15 @@ export default function CustomerPage() {
             <button 
               className="kiosk-cart-fab"
               onClick={() => setViewCart(true)}
-              style={{
-                position: 'fixed', 
-                top: '20px',           // Anchored to top
-                right: '20px',         // Anchored to right
-                zIndex: 3000, 
-                padding: '12px 20px', 
-                background: '#6f3c20', 
-                color: '#fff',
-                borderRadius: '8px',   // Slightly sharper corners look better at the top
-                fontSize: '15px', 
-                fontWeight: 'bold',
-                boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
-                border: 'none', 
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'all 0.2s ease'
-              }}
+              aria-label={`View cart: ${cart.length} items, total ${total.toFixed(2)} dollars`}
             >
-              <span style={{ fontSize: '18px' }}>🛒</span> 
+              <span className="cart-icon-emoji" aria-hidden="true">🛒</span> 
               <span>
                 {translatedText.cart} ({cart.length}) — ${total.toFixed(2)}
               </span>
             </button>
           )}
+          
 
       {/* wrapping existing CartPanel in an overlay/modal */}
         {viewCart && (
