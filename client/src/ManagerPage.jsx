@@ -16,12 +16,122 @@ const EMPTY_INVENTORY_FORM = {
 
 const JOB_TITLE_OPTIONS = ['Cashier', 'Manager', 'Barista', 'Shift Lead'];
 
+const PAYMENT_INFO_OPTIONS = ['Direct Deposit', 'Paper Check', 'Prepaid Debit Cards'];
+
 const SCHEDULE_OPTIONS = [
   'Morning — 6:00 AM to 2:00 PM',
   'Afternoon — 2:00 PM to 10:00 PM',
   'Opening — 5:30 AM to 1:30 PM',
   'Closing — 3:00 PM to 11:00 PM'
 ];
+
+const SCHEDULE_DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const SCHEDULE_DAY_LABELS = {
+  Mon: 'Monday',
+  Tue: 'Tuesday',
+  Wed: 'Wednesday',
+  Thu: 'Thursday',
+  Fri: 'Friday',
+  Sat: 'Saturday',
+  Sun: 'Sunday'
+};
+
+const DAY_TOKEN_TO_ID = {
+  mon: 'Mon',
+  monday: 'Mon',
+  tue: 'Tue',
+  tues: 'Tue',
+  tuesday: 'Tue',
+  wed: 'Wed',
+  weds: 'Wed',
+  wednesday: 'Wed',
+  thu: 'Thu',
+  thur: 'Thu',
+  thurs: 'Thu',
+  thursday: 'Thu',
+  fri: 'Fri',
+  friday: 'Fri',
+  sat: 'Sat',
+  saturday: 'Sat',
+  sun: 'Sun',
+  sunday: 'Sun'
+};
+
+const SCHEDULE_PART_SEP = ' | ';
+
+function normalizeScheduleDayToken(raw) {
+  const key = String(raw ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\./g, '');
+  if (!key) return null;
+  return DAY_TOKEN_TO_ID[key] ?? null;
+}
+
+/**
+ * Parsed schedule: `Mon, Wed | Morning — …` or shift-only legacy `Morning — …`, or unrecognized `legacy` string.
+ */
+function parseScheduleValue(str) {
+  const s = String(str ?? '').trim();
+  if (!s) return { days: [], shift: '', legacy: null };
+
+  if (s.includes(SCHEDULE_PART_SEP)) {
+    const idx = s.indexOf(SCHEDULE_PART_SEP);
+    const dayPart = s.slice(0, idx).trim();
+    const shiftPart = s.slice(idx + SCHEDULE_PART_SEP.length).trim();
+    const days = [];
+    for (const piece of dayPart.split(',')) {
+      const d = normalizeScheduleDayToken(piece);
+      if (d) days.push(d);
+    }
+    const uniq = [...new Set(days)].sort((a, b) => SCHEDULE_DAY_ORDER.indexOf(a) - SCHEDULE_DAY_ORDER.indexOf(b));
+    return { days: uniq, shift: shiftPart, legacy: null };
+  }
+
+  if (SCHEDULE_OPTIONS.includes(s)) {
+    return { days: [], shift: s, legacy: null };
+  }
+
+  return { days: [], shift: '', legacy: s };
+}
+
+function serializeSchedule(days, shift) {
+  const d = [...new Set(days)]
+    .filter((x) => SCHEDULE_DAY_ORDER.includes(x))
+    .sort((a, b) => SCHEDULE_DAY_ORDER.indexOf(a) - SCHEDULE_DAY_ORDER.indexOf(b));
+  const sh = String(shift ?? '').trim();
+  if (d.length === 0 && !sh) return '';
+  if (d.length === 0) return sh;
+  return `${d.join(', ')}${SCHEDULE_PART_SEP}${sh}`;
+}
+
+function toggleScheduleDay(scheduleStr, dayId) {
+  if (!SCHEDULE_DAY_ORDER.includes(dayId)) return String(scheduleStr ?? '');
+  const p = parseScheduleValue(scheduleStr);
+  if (p.legacy) {
+    return serializeSchedule([dayId], '');
+  }
+  const has = p.days.includes(dayId);
+  const nextDays = has ? p.days.filter((x) => x !== dayId) : [...p.days, dayId];
+  return serializeSchedule(nextDays, p.shift);
+}
+
+function setScheduleShift(scheduleStr, shiftVal) {
+  const p = parseScheduleValue(scheduleStr);
+  const days = p.legacy ? [] : p.days;
+  return serializeSchedule(days, shiftVal);
+}
+
+/** When non-null, block create/update until fixed (skipped for unrecognized legacy text). */
+function getScheduleValidationMessage(scheduleStr) {
+  const p = parseScheduleValue(scheduleStr);
+  if (p.legacy) return null;
+  if (p.days.length === 0 && !p.shift) return 'Select at least one day of the week and a shift for the schedule.';
+  if (p.days.length === 0) return 'Select at least one day of the week for the schedule.';
+  if (!p.shift) return 'Select a shift for the schedule.';
+  return null;
+}
 
 const BENEFIT_OPTION_ROWS = [
   { id: 'none', label: 'None' },
@@ -371,6 +481,13 @@ function EmployeeManagePanel({
   onClearForm,
   busy
 }) {
+  const scheduleParsed = parseScheduleValue(form.schedule);
+  const shiftSelectValue = SCHEDULE_OPTIONS.includes(scheduleParsed.shift)
+    ? scheduleParsed.shift
+    : scheduleParsed.shift
+      ? '__legacy_shift__'
+      : '';
+
   return (
     <section style={styles.panel}>
       <div style={styles.panelHeader}>
@@ -482,42 +599,80 @@ function EmployeeManagePanel({
             required
           />
         </label>
+        <div style={{ ...styles.label, gridColumn: '1 / -1' }}>
+          <span>Schedule</span>
+          {scheduleParsed.legacy ? (
+            <p style={styles.benefitsLegacyHint}>
+              Stored schedule is not in the standard format. Choose days and a shift below to replace it on save.
+            </p>
+          ) : null}
+          <div style={styles.scheduleBlock}>
+            <span style={styles.scheduleSubLabel}>Days of the week (select one or more)</span>
+            <div style={styles.daysCheckboxRow}>
+              {SCHEDULE_DAY_ORDER.map((dayId) => {
+                const checked = !scheduleParsed.legacy && scheduleParsed.days.includes(dayId);
+                return (
+                  <label key={dayId} style={styles.benefitsCheckboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => onFormChange('schedule', toggleScheduleDay(form.schedule, dayId))}
+                    />
+                    {SCHEDULE_DAY_LABELS[dayId]}
+                  </label>
+                );
+              })}
+            </div>
+            <label style={{ ...styles.label, marginTop: '12px', marginBottom: 0 }}>
+              Shift
+              <select
+                style={styles.input}
+                value={shiftSelectValue}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v !== '__legacy_shift__') onFormChange('schedule', setScheduleShift(form.schedule, v));
+                }}
+              >
+                <option value="">Select shift</option>
+                {scheduleParsed.shift && !SCHEDULE_OPTIONS.includes(scheduleParsed.shift) ? (
+                  <option value="__legacy_shift__">{scheduleParsed.shift}</option>
+                ) : null}
+                {SCHEDULE_OPTIONS.map((slot) => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
         <label style={styles.label}>
-          Schedule
+          Payment Info
           <select
             style={styles.input}
             value={
-              SCHEDULE_OPTIONS.includes(form.schedule)
-                ? form.schedule
-                : form.schedule
+              PAYMENT_INFO_OPTIONS.includes(form.paymentInfo)
+                ? form.paymentInfo
+                : form.paymentInfo
                   ? '__legacy__'
                   : ''
             }
             onChange={(e) => {
               const v = e.target.value;
-              if (v !== '__legacy__') onFormChange('schedule', v);
+              if (v !== '__legacy__') onFormChange('paymentInfo', v);
             }}
             required
           >
-            <option value="">Select shift</option>
-            {form.schedule && !SCHEDULE_OPTIONS.includes(form.schedule) ? (
-              <option value="__legacy__">{form.schedule}</option>
+            <option value="">Select payment method</option>
+            {form.paymentInfo && !PAYMENT_INFO_OPTIONS.includes(form.paymentInfo) ? (
+              <option value="__legacy__">{form.paymentInfo}</option>
             ) : null}
-            {SCHEDULE_OPTIONS.map((slot) => (
-              <option key={slot} value={slot}>
-                {slot}
+            {PAYMENT_INFO_OPTIONS.map((method) => (
+              <option key={method} value={method}>
+                {method}
               </option>
             ))}
           </select>
-        </label>
-        <label style={styles.label}>
-          Payment Info
-          <input
-            style={styles.input}
-            value={form.paymentInfo}
-            onChange={(e) => onFormChange('paymentInfo', e.target.value)}
-            required
-          />
         </label>
         <label style={styles.label}>
           Start Date
@@ -1415,6 +1570,12 @@ function ManagerDashboard() {
       return;
     }
 
+    const scheduleMsg = getScheduleValidationMessage(employeeEditForm.schedule);
+    if (scheduleMsg) {
+      setStatus(scheduleMsg);
+      return;
+    }
+
     setBusy((current) => ({ ...current, employeeCreate: true }));
 
     try {
@@ -1460,6 +1621,12 @@ function ManagerDashboard() {
     event.preventDefault();
     if (!employeeEditForm.employeeId) {
       setStatus('Select an employee first.');
+      return;
+    }
+
+    const scheduleMsg = getScheduleValidationMessage(employeeEditForm.schedule);
+    if (scheduleMsg) {
+      setStatus(scheduleMsg);
       return;
     }
 
@@ -1977,6 +2144,25 @@ const styles = {
     cursor: 'pointer',
     color: '#2f211b',
     fontWeight: 500
+  },
+  scheduleBlock: {
+    marginTop: '6px',
+    padding: '12px 14px',
+    borderRadius: '12px',
+    border: '1px solid #e3d8cb',
+    background: '#ffffff'
+  },
+  scheduleSubLabel: {
+    display: 'block',
+    fontSize: '0.88rem',
+    color: '#6b5b50',
+    marginBottom: '8px'
+  },
+  daysCheckboxRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '12px 18px',
+    alignItems: 'center'
   },
   inventoryFormGrid: {
     display: 'grid',
