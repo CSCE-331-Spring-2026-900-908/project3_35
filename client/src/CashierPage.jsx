@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiUrl } from './apiBase';
-import { buildAuthHeaders } from './auth';
+import { buildAuthHeaders, getStoredUser } from './auth';
 import './cashierstyles.css'
 
 import StaffAccessPage from './components/StaffAccessPage.jsx';
@@ -67,16 +67,41 @@ function inferCategory(name) {
   return "Milk Tea"; 
 }
 
+function buildCashierDisplayName(user) {
+  if (!user) {
+    return '';
+  }
+
+  const firstName = String(user.firstName || '').trim();
+  const lastName = String(user.lastName || '').trim();
+  const jobTitle = String(user.jobTitle || '').trim();
+  const compactJobTitle = jobTitle.replace(/\s+/g, '').toLowerCase();
+  const compactFirstName = firstName.replace(/\s+/g, '');
+
+  const normalizedFirstName =
+    compactJobTitle
+    && compactFirstName.toLowerCase().startsWith(compactJobTitle)
+    && compactFirstName.length > compactJobTitle.length
+      ? compactFirstName.slice(compactJobTitle.length)
+      : firstName;
+
+  return [normalizedFirstName, lastName]
+    .filter(Boolean)
+    .join(' ');
+}
+
 
 
 // Main cashier dashboard and variables 
 function CashierDashboard() {
   //code cashier front end design
+  const currentUser = getStoredUser();
+  const cashierName = buildCashierDisplayName(currentUser);
   const [menu, setMenu] = useState([]);
   const [cart, setCart] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selection, setSelection] = useState(null);
-  const [customerName, setCustomerName] = useState('');
+  const [customerName, setCustomerName] = useState(cashierName);
   const [activeCategory, setActiveCategory] = useState('All');
 
   // Math Calculations
@@ -216,6 +241,12 @@ function CashierDashboard() {
     setSelection(next);
   }
 
+  useEffect(() => {
+    if (cashierName) {
+      setCustomerName(cashierName);
+    }
+  }, [cashierName]);
+
   useEffect(() => {loadMenu();}, []); // Startup
 
   // UI
@@ -307,7 +338,7 @@ function CashierDashboard() {
                   <div className="option-column">
                     <h3 className="option-label">Ice Level</h3>
                     <div className="options-grid">
-                      {['No Ice', 'Less Ice', 'Regular Ice', 'Extra Ice'].map(level => (
+                      {['Hot', 'No Ice', 'Less Ice', 'Regular Ice', 'Extra Ice'].map(level => (
                         <button 
                           key={level} 
                           onClick={() => updateSelection('ice', level)} 
@@ -361,10 +392,10 @@ function CashierDashboard() {
               <label className="input-label">Customer Name:</label>
               <input 
                 type="text" 
-                placeholder="Enter name" 
+                placeholder="Cashier name" 
                 value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
                 className="customer-input"
+                readOnly
               />
             </div>
           </div>
@@ -396,7 +427,7 @@ function CashierDashboard() {
             </div>
 
             <div className="action-row">
-              <button onClick={() => { setCart([]); setCustomerName(''); }} className="btn-clear-order">Clear</button>
+              <button onClick={() => { setCart([]); setCustomerName(cashierName); }} className="btn-clear-order">Clear</button>
               <button 
                 onClick={handleSubmitOrder} 
                 disabled={cart.length === 0 || !customerName.trim()}

@@ -321,6 +321,7 @@ textarea:focus-visible {
 
 .toppings-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.6rem;
 }
 
@@ -328,6 +329,8 @@ textarea:focus-visible {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 72px;
+  width: 100%;
 }
 
 .notes-field {

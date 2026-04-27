@@ -561,16 +561,19 @@ export default function CustomerPage() {
   // Translates ice level labels.
   function translateIce(level) {
     if (language === 'es') {
+      if (level === 'Hot') return 'Caliente';
       if (level === 'No Ice') return 'Sin hielo';
       if (level === 'Light Ice') return 'Poco hielo';
       if (level === 'Regular Ice') return 'Hielo regular';
     }
     if (language === 'zh-CN') {
+      if (level === 'Hot') return '热饮';
       if (level === 'No Ice') return '去冰';
       if (level === 'Light Ice') return '少冰';
       if (level === 'Regular Ice') return '正常冰';
     }
     if (language === 'ko') {
+      if (level === 'Hot') return '따뜻하게';
       if (level === 'No Ice') return '얼음 없음';
       if (level === 'Light Ice') return '적은 얼음';
       if (level === 'Regular Ice') return '보통 얼음';
