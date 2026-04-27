@@ -4,31 +4,7 @@ import { apiUrl } from './apiBase';
 import StaffAccessPage from './components/StaffAccessPage';
 import { buildAuthHeaders } from './auth';
 
-const JOB_TITLE_OPTIONS = ['Manager', 'Cashier', 'Barista', 'Shift Lead'];
-const PAYMENT_INFO_OPTIONS = ['Direct Deposit', 'Check', 'Cash', 'N/A'];
-const BENEFITS_OPTIONS = ['None', 'Health', 'Dental', '401k', 'Health, Dental', 'Health, 401k', 'Dental, 401k'];
-const SCHEDULE_OPTIONS = [
-  'Mon-Fri 8am-4pm',
-  'Mon-Fri 09:00-17:00',
-  'Tue-Sat 10am-6pm',
-  'Wed-Sun 12pm-8pm',
-  'Thu-Mon 9am-5pm',
-  'Inactive'
-];
 const INVENTORY_CATEGORY_OPTIONS = ['supply', 'ingredient', 'packaging', 'seasonal'];
-
-const EMPTY_EMPLOYEE_FORM = {
-  jobTitle: 'Cashier',
-  firstName: '',
-  lastName: '',
-  schedule: 'Mon-Fri 8am-4pm',
-  paymentInfo: 'Direct Deposit',
-  startDate: new Date().toISOString().slice(0, 10),
-  hourlyPay: '',
-  benefits: 'None',
-  email: '',
-  pin: ''
-};
 
 const EMPTY_INVENTORY_FORM = {
   itemInventoryId: '',
@@ -50,6 +26,15 @@ const EMPTY_EMPLOYEE_EDIT_FORM = {
   benefits: '',
   email: '',
   pin: ''
+};
+
+const EMPTY_MENU_FORM = {
+  menuItemId: '',
+  menuItemCategory: '',
+  pricePerUnit: '',
+  selectedIngredientId: '',
+  recipeQuantity: '',
+  selectedRecipeRowRef: ''
 };
 
 function pad2(value) {
@@ -155,164 +140,6 @@ function DataTable({ title, rows, preferredOrder, formatters }) {
           </tbody>
         </table>
       </div>
-    </section>
-  );
-}
-
-function EmployeeCreatePanel({ form, onChange, onSubmit, busy }) {
-  return (
-    <section style={styles.panel}>
-      <div style={styles.panelHeader}>
-        <div>
-          <h2 style={styles.panelTitle}>Create Employee</h2>
-          <p style={styles.hint}>
-            Add a new manager, cashier, or other staff member, then assign a 4-digit PIN for sign-in.
-          </p>
-        </div>
-        <div style={styles.panelMeta}>Manager-only action</div>
-      </div>
-
-      <form style={styles.employeeFormGrid} onSubmit={onSubmit}>
-        <label style={styles.label}>
-          Job Title
-          <input
-            style={styles.input}
-            list="job-title-options"
-            value={form.jobTitle}
-            onChange={(event) => onChange('jobTitle', event.target.value)}
-            required
-          />
-          <datalist id="job-title-options">
-            {JOB_TITLE_OPTIONS.map((option) => (
-              <option key={option} value={option} />
-            ))}
-          </datalist>
-        </label>
-
-        <label style={styles.label}>
-          First Name
-          <input
-            style={styles.input}
-            value={form.firstName}
-            onChange={(event) => onChange('firstName', event.target.value)}
-            required
-          />
-        </label>
-
-        <label style={styles.label}>
-          Last Name
-          <input
-            style={styles.input}
-            value={form.lastName}
-            onChange={(event) => onChange('lastName', event.target.value)}
-            required
-          />
-        </label>
-
-        <label style={styles.label}>
-          Email
-          <input
-            style={styles.input}
-            type="email"
-            value={form.email}
-            onChange={(event) => onChange('email', event.target.value)}
-            placeholder="employee@company.com"
-            required
-          />
-        </label>
-
-        <label style={styles.label}>
-          4-Digit PIN
-          <input
-            style={styles.input}
-            type="password"
-            inputMode="numeric"
-            pattern="\d{4}"
-            value={form.pin}
-            onChange={(event) => onChange('pin', event.target.value.replace(/\D/g, '').slice(0, 4))}
-            placeholder="1234"
-            required
-          />
-        </label>
-
-        <label style={styles.label}>
-          Schedule
-          <input
-            style={styles.input}
-            list="schedule-options"
-            value={form.schedule}
-            onChange={(event) => onChange('schedule', event.target.value)}
-            required
-          />
-          <datalist id="schedule-options">
-            {SCHEDULE_OPTIONS.map((option) => (
-              <option key={option} value={option} />
-            ))}
-          </datalist>
-        </label>
-
-        <label style={styles.label}>
-          Payment Info
-          <select
-            style={styles.input}
-            value={form.paymentInfo}
-            onChange={(event) => onChange('paymentInfo', event.target.value)}
-          >
-            {PAYMENT_INFO_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={styles.label}>
-          Start Date
-          <input
-            style={styles.input}
-            type="date"
-            value={form.startDate}
-            onChange={(event) => onChange('startDate', event.target.value)}
-            required
-          />
-        </label>
-
-        <label style={styles.label}>
-          Hourly Pay
-          <input
-            style={styles.input}
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.hourlyPay}
-            onChange={(event) => onChange('hourlyPay', event.target.value)}
-            placeholder="18.50"
-            required
-          />
-        </label>
-
-        <label style={styles.label}>
-          Benefits
-          <input
-            style={styles.input}
-            list="benefits-options"
-            value={form.benefits}
-            onChange={(event) => onChange('benefits', event.target.value)}
-            required
-          />
-          <datalist id="benefits-options">
-            {BENEFITS_OPTIONS.map((option) => (
-              <option key={option} value={option} />
-            ))}
-          </datalist>
-        </label>
-
-        <div style={styles.formActionsRow}>
-          <button type="submit" style={styles.primaryButton} disabled={busy}>
-            {busy ? 'Creating…' : 'Create employee'}
-          </button>
-        </div>
-      </form>
     </section>
   );
 }
@@ -655,9 +482,196 @@ function EmployeeManagePanel({
   );
 }
 
+function MenuManagePanel({
+  menuItems,
+  recipeRows,
+  ingredientOptions,
+  form,
+  onFormChange,
+  onSelectMenuRow,
+  onSelectRecipeRow,
+  onAddMenuItem,
+  onUpdatePrice,
+  onUpdateMenuItem,
+  onAddRecipeComponent,
+  onUpdateRecipeQuantity,
+  onRemoveRecipeComponent,
+  onClearForm,
+  busy
+}) {
+  return (
+    <section style={styles.panel}>
+      <div style={styles.panelHeader}>
+        <div>
+          <h2 style={styles.panelTitle}>Menu Management</h2>
+          <p style={styles.hint}>Manage menu items and recipe components for each selected drink.</p>
+        </div>
+        <div style={styles.panelMeta}>
+          {menuItems.length} items, {recipeRows.length} recipe rows
+        </div>
+      </div>
+
+      <div style={styles.tableWrap}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>Menu Item ID</th>
+              <th style={styles.th}>Menu Item Name</th>
+              <th style={styles.th}>Price Per Unit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {menuItems.length === 0 ? (
+              <tr>
+                <td style={styles.emptyCell} colSpan={3}>
+                  No menu items found.
+                </td>
+              </tr>
+            ) : (
+              menuItems.map((row) => {
+                const selected = String(form.menuItemId) === String(row.menu_item_id);
+                return (
+                  <tr
+                    key={row.menu_item_id}
+                    style={selected ? styles.selectedRow : undefined}
+                    onClick={() => onSelectMenuRow(row)}
+                  >
+                    <td style={styles.td}>{row.menu_item_id}</td>
+                    <td style={styles.td}>{row.menu_item_category}</td>
+                    <td style={styles.td}>{formatMoney(row.price_per_unit)}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <form style={styles.employeeFormGrid} onSubmit={onAddMenuItem}>
+        <label style={styles.label}>
+          Menu Item ID
+          <input style={styles.input} value={form.menuItemId} disabled placeholder="Auto-generated" />
+        </label>
+        <label style={styles.label}>
+          Menu Item Name
+          <input
+            style={styles.input}
+            value={form.menuItemCategory}
+            onChange={(e) => onFormChange('menuItemCategory', e.target.value)}
+            required
+          />
+        </label>
+        <label style={styles.label}>
+          Price Per Unit
+          <input
+            style={styles.input}
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.pricePerUnit}
+            onChange={(e) => onFormChange('pricePerUnit', e.target.value)}
+            required
+          />
+        </label>
+        <div style={styles.formActionsRow}>
+          <button type="submit" style={styles.primaryButton} disabled={busy.menuAdd}>
+            {busy.menuAdd ? 'Adding…' : 'Add Menu Item'}
+          </button>
+          <button type="button" style={styles.secondaryButton} onClick={onUpdatePrice} disabled={!form.menuItemId || busy.menuUpdatePrice}>
+            {busy.menuUpdatePrice ? 'Updating…' : 'Update Price'}
+          </button>
+          <button type="button" style={styles.secondaryButton} onClick={onUpdateMenuItem} disabled={!form.menuItemId || busy.menuUpdate}>
+            {busy.menuUpdate ? 'Updating…' : 'Update Menu Item'}
+          </button>
+          <button type="button" style={styles.secondaryButton} onClick={onClearForm}>
+            Clear
+          </button>
+        </div>
+      </form>
+
+      <div style={styles.tableWrap}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>Ingredient ID</th>
+              <th style={styles.th}>Ingredient Name</th>
+              <th style={styles.th}>Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recipeRows.length === 0 ? (
+              <tr>
+                <td style={styles.emptyCell} colSpan={3}>
+                  Select a menu item to load recipe components.
+                </td>
+              </tr>
+            ) : (
+              recipeRows.map((row, idx) => {
+                const key = row.row_ref ?? `${row.item_inventory_id}-${idx}`;
+                const selected = String(form.selectedRecipeRowRef) === String(row.row_ref);
+                return (
+                  <tr key={key} style={selected ? styles.selectedRow : undefined} onClick={() => onSelectRecipeRow(row)}>
+                    <td style={styles.td}>{row.item_inventory_id}</td>
+                    <td style={styles.td}>{row.ingredient_name}</td>
+                    <td style={styles.td}>{row.quantity}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={styles.employeeFormGrid}>
+        <label style={styles.label}>
+          Component
+          <select
+            style={styles.input}
+            value={form.selectedIngredientId}
+            onChange={(e) => onFormChange('selectedIngredientId', e.target.value)}
+          >
+            <option value="">Select component</option>
+            {ingredientOptions.map((opt) => (
+              <option key={opt.item_inventory_id} value={opt.item_inventory_id}>
+                {opt.name} [{opt.item_category}] (ID {opt.item_inventory_id})
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={styles.label}>
+          Recipe Quantity
+          <input
+            style={styles.input}
+            type="number"
+            min="1"
+            step="1"
+            value={form.recipeQuantity}
+            onChange={(e) => onFormChange('recipeQuantity', e.target.value)}
+          />
+        </label>
+        <div style={styles.formActionsRow}>
+          <button type="button" style={styles.primaryButton} onClick={onAddRecipeComponent} disabled={!form.menuItemId || busy.recipeAdd}>
+            {busy.recipeAdd ? 'Adding…' : 'Add Component'}
+          </button>
+          <button type="button" style={styles.secondaryButton} onClick={onUpdateRecipeQuantity} disabled={!form.selectedRecipeRowRef || busy.recipeUpdate}>
+            {busy.recipeUpdate ? 'Updating…' : 'Update Recipe Qty'}
+          </button>
+          <button type="button" style={styles.dangerButton} onClick={onRemoveRecipeComponent} disabled={!form.selectedRecipeRowRef || busy.recipeRemove}>
+            {busy.recipeRemove ? 'Removing…' : 'Remove Component'}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ManagerDashboard() {
   const [inventory, setInventory] = useState([]);
   const [inventoryForm, setInventoryForm] = useState(EMPTY_INVENTORY_FORM);
+  const [menuItems, setMenuItems] = useState([]);
+  const [recipeRows, setRecipeRows] = useState([]);
+  const [ingredientOptions, setIngredientOptions] = useState([]);
+  const [menuForm, setMenuForm] = useState(EMPTY_MENU_FORM);
   const [orders, setOrders] = useState([]);
   const [usageRows, setUsageRows] = useState([]);
   const [xReportRows, setXReportRows] = useState([]);
@@ -677,7 +691,16 @@ function ManagerDashboard() {
     inventoryUpdate: false,
     employeeHourlyUpdate: false,
     employeeUpdate: false,
-    employeeTerminate: false
+    employeeTerminate: false,
+    menuItems: false,
+    menuAdd: false,
+    menuUpdatePrice: false,
+    menuUpdate: false,
+    ingredientOptions: false,
+    recipeRows: false,
+    recipeAdd: false,
+    recipeUpdate: false,
+    recipeRemove: false
   });
 
   const [status, setStatus] = useState('Ready.');
@@ -737,6 +760,47 @@ function ManagerDashboard() {
       setStatus(`Orders load failed: ${error.message}`);
     } finally {
       setBusy((current) => ({ ...current, orders: false }));
+    }
+  }
+
+  async function loadMenuItems() {
+    setBusy((current) => ({ ...current, menuItems: true }));
+    try {
+      const payload = await fetchJson('/api/menu/manage/items');
+      setMenuItems(normalizeRows(payload));
+      setStatus('Loaded menu items.');
+    } catch (error) {
+      setStatus(`Menu load failed: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, menuItems: false }));
+    }
+  }
+
+  async function loadIngredientOptions() {
+    setBusy((current) => ({ ...current, ingredientOptions: true }));
+    try {
+      const payload = await fetchJson('/api/menu/manage/ingredient-options');
+      setIngredientOptions(normalizeRows(payload));
+    } catch (error) {
+      setStatus(`Ingredient options load failed: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, ingredientOptions: false }));
+    }
+  }
+
+  async function loadRecipeForMenuItem(menuItemId) {
+    if (!menuItemId) {
+      setRecipeRows([]);
+      return;
+    }
+    setBusy((current) => ({ ...current, recipeRows: true }));
+    try {
+      const payload = await fetchJson(`/api/menu/manage/items/${menuItemId}/recipe`);
+      setRecipeRows(normalizeRows(payload));
+    } catch (error) {
+      setStatus(`Recipe load failed: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, recipeRows: false }));
     }
   }
 
@@ -828,6 +892,11 @@ function ManagerDashboard() {
     await Promise.all([loadInventory(), loadOrders(), loadEmployees()]);
   }
 
+  async function refreshMenuManagement() {
+    await Promise.all([loadMenuItems(), loadIngredientOptions()]);
+    setRecipeRows([]);
+  }
+
   function updateInventoryForm(field, value) {
     setInventoryForm((current) => ({
       ...current,
@@ -847,6 +916,195 @@ function ManagerDashboard() {
 
   function clearInventoryForm() {
     setInventoryForm(EMPTY_INVENTORY_FORM);
+  }
+
+  function updateMenuForm(field, value) {
+    setMenuForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  }
+
+  function selectMenuItemRow(row) {
+    setMenuForm((current) => ({
+      ...current,
+      menuItemId: String(row.menu_item_id ?? ''),
+      menuItemCategory: String(row.menu_item_category ?? ''),
+      pricePerUnit: String(row.price_per_unit ?? ''),
+      recipeQuantity: '',
+      selectedRecipeRowRef: ''
+    }));
+    loadRecipeForMenuItem(row.menu_item_id);
+  }
+
+  function selectRecipeRow(row) {
+    setMenuForm((current) => ({
+      ...current,
+      selectedRecipeRowRef: String(row.row_ref ?? ''),
+      selectedIngredientId: String(row.item_inventory_id ?? ''),
+      recipeQuantity: String(row.quantity ?? '')
+    }));
+  }
+
+  function clearMenuForm() {
+    setMenuForm(EMPTY_MENU_FORM);
+    setRecipeRows([]);
+  }
+
+  async function handleAddMenuItem(event) {
+    event.preventDefault();
+    setBusy((current) => ({ ...current, menuAdd: true }));
+    try {
+      const payload = await fetchJson('/api/menu/manage/items', {
+        method: 'POST',
+        body: JSON.stringify({
+          menuItemCategory: menuForm.menuItemCategory,
+          pricePerUnit: menuForm.pricePerUnit
+        })
+      });
+      const created = payload?.item;
+      if (created) {
+        setMenuItems((current) => [...current, created].sort((a, b) => Number(a.menu_item_id) - Number(b.menu_item_id)));
+      } else {
+        await loadMenuItems();
+      }
+      clearMenuForm();
+      setStatus(created ? `Added menu item "${created.menu_item_category}".` : 'Menu item added.');
+    } catch (error) {
+      setStatus(`Menu add failed: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, menuAdd: false }));
+    }
+  }
+
+  async function handleUpdateMenuPrice() {
+    if (!menuForm.menuItemId) {
+      setStatus('Select a menu item first.');
+      return;
+    }
+    setBusy((current) => ({ ...current, menuUpdatePrice: true }));
+    try {
+      const payload = await fetchJson(`/api/menu/manage/items/${menuForm.menuItemId}/price`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          pricePerUnit: menuForm.pricePerUnit
+        })
+      });
+      const updated = payload?.item;
+      if (updated) {
+        setMenuItems((current) =>
+          current.map((row) => (String(row.menu_item_id) === String(updated.menu_item_id) ? updated : row))
+        );
+        selectMenuItemRow(updated);
+      } else {
+        await loadMenuItems();
+      }
+      setStatus(updated ? `Updated price for "${updated.menu_item_category}".` : 'Menu price updated.');
+    } catch (error) {
+      setStatus(`Price update failed: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, menuUpdatePrice: false }));
+    }
+  }
+
+  async function handleUpdateMenuItem() {
+    if (!menuForm.menuItemId) {
+      setStatus('Select a menu item first.');
+      return;
+    }
+    setBusy((current) => ({ ...current, menuUpdate: true }));
+    try {
+      const payload = await fetchJson(`/api/menu/manage/items/${menuForm.menuItemId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          menuItemCategory: menuForm.menuItemCategory,
+          pricePerUnit: menuForm.pricePerUnit
+        })
+      });
+      const updated = payload?.item;
+      if (updated) {
+        setMenuItems((current) =>
+          current.map((row) => (String(row.menu_item_id) === String(updated.menu_item_id) ? updated : row))
+        );
+        selectMenuItemRow(updated);
+      } else {
+        await loadMenuItems();
+      }
+      setStatus(updated ? `Updated menu item "${updated.menu_item_category}".` : 'Menu item updated.');
+    } catch (error) {
+      setStatus(`Menu update failed: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, menuUpdate: false }));
+    }
+  }
+
+  async function handleAddRecipeComponent() {
+    if (!menuForm.menuItemId) {
+      setStatus('Select a menu item first.');
+      return;
+    }
+    setBusy((current) => ({ ...current, recipeAdd: true }));
+    try {
+      await fetchJson(`/api/menu/manage/items/${menuForm.menuItemId}/recipe`, {
+        method: 'POST',
+        body: JSON.stringify({
+          itemInventoryId: menuForm.selectedIngredientId,
+          quantity: menuForm.recipeQuantity
+        })
+      });
+      await loadRecipeForMenuItem(menuForm.menuItemId);
+      setStatus('Component added to recipe.');
+    } catch (error) {
+      setStatus(`Failed to add recipe component: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, recipeAdd: false }));
+    }
+  }
+
+  async function handleUpdateRecipeQuantity() {
+    if (!menuForm.selectedRecipeRowRef) {
+      setStatus('Select a recipe row first.');
+      return;
+    }
+    setBusy((current) => ({ ...current, recipeUpdate: true }));
+    try {
+      await fetchJson('/api/menu/manage/recipe-row', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          rowRef: menuForm.selectedRecipeRowRef,
+          quantity: menuForm.recipeQuantity
+        })
+      });
+      await loadRecipeForMenuItem(menuForm.menuItemId);
+      setStatus('Recipe quantity updated.');
+    } catch (error) {
+      setStatus(`Failed to update recipe quantity: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, recipeUpdate: false }));
+    }
+  }
+
+  async function handleRemoveRecipeComponent() {
+    if (!menuForm.selectedRecipeRowRef) {
+      setStatus('Select a recipe row first.');
+      return;
+    }
+    setBusy((current) => ({ ...current, recipeRemove: true }));
+    try {
+      await fetchJson('/api/menu/manage/recipe-row', {
+        method: 'DELETE',
+        body: JSON.stringify({
+          rowRef: menuForm.selectedRecipeRowRef
+        })
+      });
+      await loadRecipeForMenuItem(menuForm.menuItemId);
+      setMenuForm((current) => ({ ...current, selectedRecipeRowRef: '', recipeQuantity: '' }));
+      setStatus('Recipe component removed.');
+    } catch (error) {
+      setStatus(`Failed to remove recipe component: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, recipeRemove: false }));
+    }
   }
 
   async function handleAddInventoryItem(event) {
@@ -1091,6 +1349,7 @@ function ManagerDashboard() {
 
   useEffect(() => {
     refreshAll();
+    refreshMenuManagement();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1150,6 +1409,15 @@ function ManagerDashboard() {
             onClick={() => setActiveTab('employees')}
           >
             Employees
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'menu'}
+            style={activeTab === 'menu' ? styles.tabSelected : styles.tab}
+            onClick={() => setActiveTab('menu')}
+          >
+            Menu
           </button>
         </div>
 
@@ -1316,6 +1584,38 @@ function ManagerDashboard() {
               onUpdateDetails={handleUpdateEmployeeDetails}
               onTerminateEmployee={handleTerminateEmployee}
               onClearForm={clearEmployeeEditForm}
+              busy={busy}
+            />
+          </div>
+        ) : null}
+
+        {activeTab === 'menu' ? (
+          <div style={styles.tabBody} role="tabpanel" aria-label="Menu tab">
+            <div style={styles.tabActionsLeft}>
+              <button
+                type="button"
+                style={styles.secondaryButton}
+                onClick={refreshMenuManagement}
+                disabled={busy.menuItems || busy.ingredientOptions}
+              >
+                {busy.menuItems || busy.ingredientOptions ? 'Loading…' : 'Reload menu & ingredients'}
+              </button>
+            </div>
+            <MenuManagePanel
+              menuItems={menuItems}
+              recipeRows={recipeRows}
+              ingredientOptions={ingredientOptions}
+              form={menuForm}
+              onFormChange={updateMenuForm}
+              onSelectMenuRow={selectMenuItemRow}
+              onSelectRecipeRow={selectRecipeRow}
+              onAddMenuItem={handleAddMenuItem}
+              onUpdatePrice={handleUpdateMenuPrice}
+              onUpdateMenuItem={handleUpdateMenuItem}
+              onAddRecipeComponent={handleAddRecipeComponent}
+              onUpdateRecipeQuantity={handleUpdateRecipeQuantity}
+              onRemoveRecipeComponent={handleRemoveRecipeComponent}
+              onClearForm={clearMenuForm}
               busy={busy}
             />
           </div>
