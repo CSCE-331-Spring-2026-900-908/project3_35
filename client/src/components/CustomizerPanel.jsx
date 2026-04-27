@@ -282,6 +282,35 @@ export default function CustomizerPanel({
         </section>
 
         <section className="customizer__section">
+          <h3>{labels.quantity || 'Quantity'}</h3>
+          <div className="choice-row" role="group" aria-label={labels.quantity || 'Quantity'}>
+            <button
+              type="button"
+              className="button button--ghost button--small"
+              onClick={() => onSelectionChange('quantity', Math.max(1, Number(selection.quantity || 1) - 1))}
+              disabled={Number(selection.quantity || 1) <= 1}
+            >
+              {labels.decreaseQuantity || '-'}
+            </button>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={selection.quantity || 1}
+              onChange={(event) => onSelectionChange('quantity', event.target.value)}
+              style={{ width: '90px', textAlign: 'center' }}
+            />
+            <button
+              type="button"
+              className="button button--ghost button--small"
+              onClick={() => onSelectionChange('quantity', Number(selection.quantity || 1) + 1)}
+            >
+              {labels.increaseQuantity || '+'}
+            </button>
+          </div>
+        </section>
+
+        <section className="customizer__section">
           <h3>{labels.sweetness}</h3>
           <div className="choice-row" role="radiogroup" aria-label={labels.sweetnessLevel}>
             {SWEETNESS_CHOICES.map((level) => (

@@ -297,6 +297,7 @@ function inferCategory(name) {
 function buildDefaultSelection(item) {
   return {
     itemId: item.id,
+    quantity: 1,
     size: 'Regular',
     sweetness: '75%',
     ice: 'Regular Ice',
@@ -886,7 +887,11 @@ export default function CustomerPage() {
       return;
     }
 
-    const next = { ...selection, [field]: value };
+    const normalizedValue =
+      field === 'quantity'
+        ? Math.max(1, Number.parseInt(value, 10) || 1)
+        : value;
+    const next = { ...selection, [field]: normalizedValue };
     next.total = calculateTotal(selectedItem, next);
     setSelection(next);
 
@@ -948,7 +953,7 @@ export default function CustomerPage() {
       menuItemId: item.id,
       name: item.name,
       displayName: item.displayName || item.name,
-      quantity: 1,
+      quantity: currentSelection.quantity || 1,
       size: currentSelection.size || 'Regular',
       displaySize: translateSize(currentSelection.size || 'Regular'),
       sweetness: currentSelection.sweetness,
