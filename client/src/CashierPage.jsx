@@ -23,6 +23,7 @@ function parseApiError(payload) {
 function buildDefaultSelection(item) {
   return {
     itemId: item.id,
+    quantity: 1,
     size: 'Regular',
     sweetness: '75%',
     ice: 'Regular Ice',
@@ -109,7 +110,7 @@ function CashierDashboard() {
         id: `${selectedItem.id}-${Date.now()}`, // Unique ID for this specific drink
         menuItemId: selectedItem.id,
         name: selectedItem.name,
-        quantity: 1,
+        quantity: selection.quantity || 1,
         size: selection.size,
         sweetness: selection.sweetness,
         ice: selection.ice,
@@ -127,6 +128,13 @@ function CashierDashboard() {
   // remove from cart
   function removeFromCart(id) {
     setCart((current) => current.filter((item) => item.id !== id));
+  }
+
+  function updateCartItemQuantity(id, nextQuantity) {
+    const safeQuantity = Math.max(1, Number(nextQuantity || 1));
+    setCart((current) =>
+      current.map((item) => (item.id === id ? { ...item, quantity: safeQuantity } : item))
+    );
   }
 
   // Toggle Toppings
@@ -209,7 +217,11 @@ function CashierDashboard() {
     if (!selectedItem || !selection) {
       return;
     }
-    const next = { ...selection, [field]: value };
+    const normalizedValue =
+      field === 'quantity'
+        ? Math.max(1, Number.parseInt(value, 10) || 1)
+        : value;
+    const next = { ...selection, [field]: normalizedValue };
     next.total = calculateTotal(selectedItem, next);
     setSelection(next);
   }
@@ -283,6 +295,34 @@ function CashierDashboard() {
                         {size} {size === 'Large' ? '(+$0.90)' : ''}
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                <div className="option-section">
+                  <h3 className="option-label">Quantity</h3>
+                  <div className="category-row">
+                    <button
+                      onClick={() => updateSelection('quantity', Number(selection.quantity || 1) - 1)}
+                      className="category-btn"
+                      disabled={Number(selection.quantity || 1) <= 1}
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={selection.quantity || 1}
+                      onChange={(event) => updateSelection('quantity', event.target.value)}
+                      className="customer-input"
+                      style={{ maxWidth: '100px', textAlign: 'center' }}
+                    />
+                    <button
+                      onClick={() => updateSelection('quantity', Number(selection.quantity || 1) + 1)}
+                      className="category-btn"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
 
@@ -378,7 +418,23 @@ function CashierDashboard() {
                     <span className="item-meta">{item.size} • {item.sweetness} • {item.ice}</span>
                   </div>
                   <div className="item-price-actions">
-                    <strong className="item-price">${item.total.toFixed(2)}</strong>
+                    <strong className="item-price">${(Number(item.total || 0) * Number(item.quantity || 1)).toFixed(2)}</strong>
+                    <div className="category-row">
+                      <button
+                        onClick={() => updateCartItemQuantity(item.id, Number(item.quantity || 1) - 1)}
+                        className="category-btn"
+                        disabled={Number(item.quantity || 1) <= 1}
+                      >
+                        -
+                      </button>
+                      <span className="item-meta">Qty: {item.quantity || 1}</span>
+                      <button
+                        onClick={() => updateCartItemQuantity(item.id, Number(item.quantity || 1) + 1)}
+                        className="category-btn"
+                      >
+                        +
+                      </button>
+                    </div>
                     <button onClick={() => removeFromCart(item.id)} className="btn-remove-item">Remove</button>
                   </div>
                 </div>

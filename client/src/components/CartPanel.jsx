@@ -24,6 +24,7 @@ export default function CartPanel({
   checkoutForm,
   onCheckoutChange,
   onCheckoutFocus,
+  onUpdateItemQuantity,
   onRemoveItem,
   onSubmitOrder,
   storeLocations,
@@ -72,7 +73,26 @@ export default function CartPanel({
               </div>
 
               <div className="cart-item__meta">
-                <strong>${item.total.toFixed(2)}</strong>
+                <strong>${(Number(item.total || 0) * Number(item.quantity || 1)).toFixed(2)}</strong>
+                <div className="choice-row" aria-label={labels.quantity || 'Quantity'}>
+                  <button
+                    type="button"
+                    className="button button--ghost button--small"
+                    onClick={() => onUpdateItemQuantity?.(item.id, Math.max(1, Number(item.quantity || 1) - 1))}
+                    disabled={!onUpdateItemQuantity || Number(item.quantity || 1) <= 1}
+                  >
+                    {labels.decreaseQuantity || '-'}
+                  </button>
+                  <span>{labels.quantity || 'Qty'}: {item.quantity || 1}</span>
+                  <button
+                    type="button"
+                    className="button button--ghost button--small"
+                    onClick={() => onUpdateItemQuantity?.(item.id, Number(item.quantity || 1) + 1)}
+                    disabled={!onUpdateItemQuantity}
+                  >
+                    {labels.increaseQuantity || '+'}
+                  </button>
+                </div>
                 <button
                   type="button"
                   className="button button--ghost button--small"

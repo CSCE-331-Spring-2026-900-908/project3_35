@@ -196,5 +196,52 @@ export function createInventoryRouter(pool) {
     }
   });
 
+  router.delete('/:itemInventoryId', async (request, response) => {
+    if (!pool) {
+      return response.status(503).json({
+        error: 'Database is not configured.',
+        details: 'Set the PostgreSQL environment variables in server/.env and restart the server.'
+      });
+    }
+
+    const itemInventoryId = Number(request.params.itemInventoryId);
+    if (!Number.isInteger(itemInventoryId) || itemInventoryId <= 0) {
+      return response.status(400).json({
+        error: 'A valid item inventory ID is required.'
+      });
+    }
+
+    try {
+      const result = await pool.query(
+        `
+          DELETE FROM item_inventory
+          WHERE item_inventory_id = $1
+          RETURNING
+            item_inventory_id,
+            name,
+            quantity_available,
+            price_per_unit,
+            item_category
+        `,
+        [itemInventoryId]
+      );
+
+      if (result.rows.length === 0) {
+        return response.status(404).json({
+          error: 'Inventory item not found.'
+        });
+      }
+
+      return response.json({
+        item: result.rows[0]
+      });
+    } catch (error) {
+      return response.status(500).json({
+        error: 'Failed to delete inventory item.',
+        details: error.message
+      });
+    }
+  });
+
   return router;
 }
