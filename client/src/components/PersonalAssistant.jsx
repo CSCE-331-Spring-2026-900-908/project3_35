@@ -150,6 +150,7 @@ export default function PersonalAssistant({
       <button
         type="button"
         className="personal-assistant__launcher"
+        aria-label={title}
         aria-expanded={open}
         aria-controls="personal-assistant-panel"
         aria-haspopup="dialog"
