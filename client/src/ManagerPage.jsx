@@ -889,7 +889,7 @@ function ManagerDashboard() {
       a.remove();
       URL.revokeObjectURL(url);
       setXReportRows([]);
-      setStatus('Downloaded Z-Report CSV and cleared X-Report data.');
+      setStatus("Downloaded Z-Report CSV and reset today's hourly report totals.");
     } catch (error) {
       setStatus(`Z-Report download failed: ${error.message}`);
     } finally {
@@ -1519,7 +1519,7 @@ function ManagerDashboard() {
                 <div style={styles.splitRow}>
                   <div>
                     <h3 style={styles.reportTitle}>X-Report (sales per hour)</h3>
-                    <p style={styles.hint}>Loads 24 rows showing hourly order count and sales totals.</p>
+                    <p style={styles.hint}>Loads 24 hourly rows from reports_total, including sales and payment breakdowns.</p>
                   </div>
                   <button type="button" style={styles.secondaryButton} onClick={loadXReport} disabled={busy.xReport}>
                     {busy.xReport ? 'Loading…' : "Load today's X-Report"}
@@ -1529,9 +1529,20 @@ function ManagerDashboard() {
                 <DataTable
                   title="X-Report Preview"
                   rows={xReportRows}
-                  preferredOrder={['hour', 'order_count', 'total_sales']}
+                  preferredOrder={[
+                    'hour',
+                    'order_count',
+                    'total_sales',
+                    'total_cash_payments',
+                    'total_card_payments',
+                    'total_cash_amount',
+                    'total_card_amount',
+                    'last_updated'
+                  ]}
                   formatters={{
-                    total_sales: (v) => formatMoney(v)
+                    total_sales: (v) => formatMoney(v),
+                    total_cash_amount: (v) => formatMoney(v),
+                    total_card_amount: (v) => formatMoney(v)
                   }}
                 />
               </div>
@@ -1540,7 +1551,7 @@ function ManagerDashboard() {
                 <div style={styles.splitRow}>
                   <div>
                     <h3 style={styles.reportTitle}>Z-Report (daily closeout export)</h3>
-                    <p style={styles.hint}>Downloads a CSV snapshot of today’s totals.</p>
+                    <p style={styles.hint}>Downloads the daily closeout, then clears today&apos;s hourly report totals. This should only be run once per day.</p>
                   </div>
                   <button
                     type="button"

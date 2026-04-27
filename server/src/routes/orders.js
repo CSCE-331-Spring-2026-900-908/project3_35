@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticateRequest, requireRole } from '../auth.js';
+import { formatBusinessDate, getBusinessHour, normalizePaymentMethod, recordOrderInReportTotals } from '../reportTotals.js';
 
 function validateOrder(payload) {
   if (!payload.customerName || !Array.isArray(payload.items) || payload.items.length === 0) {
@@ -209,6 +210,9 @@ function mergeItemsForExistingSchema(items) {
 async function createOrderInExistingSchema(client, payload, items) {
   const employeeId = Number(payload.employeeId || process.env.DEFAULT_EMPLOYEE_ID || 1);
   const total = Number(payload.totals?.total || items.reduce((sum, item) => sum + item.total, 0));
+  const orderTimestamp = new Date();
+  const businessDate = formatBusinessDate(orderTimestamp);
+  const paymentMethod = normalizePaymentMethod(payload.paymentMethod);
 
   const requiredInventory = await calculateRequiredInventory(client, items);
   await decrementInventory(client, requiredInventory);
@@ -251,6 +255,13 @@ async function createOrderInExistingSchema(client, payload, items) {
       [orderId, item.menuItemId, item.quantity, pricePerUnit]
     );
   }
+
+  await recordOrderInReportTotals(client, {
+    businessDate,
+    reportHour: getBusinessHour(orderTimestamp),
+    orderTotal: total,
+    paymentMethod
+  });
 
   return {
     orderId,
@@ -553,6 +564,9 @@ export function createOrdersRouter(pool) {
       );
 
       const orderId = orderInsert.rows[0].id;
+      const orderTimestamp = new Date();
+      const businessDate = formatBusinessDate(orderTimestamp);
+      const paymentMethod = normalizePaymentMethod(request.body?.paymentMethod);
 
       for (const item of items) {
         const itemInsert = await client.query(
@@ -583,6 +597,13 @@ export function createOrdersRouter(pool) {
           );
         }
       }
+
+      await recordOrderInReportTotals(client, {
+        businessDate,
+        reportHour: getBusinessHour(orderTimestamp),
+        orderTotal: Number(request.body?.totals?.total || 0),
+        paymentMethod
+      });
 
       await client.query('COMMIT');
       return response.status(201).json({ orderNumber, stored: true, schema: 'project3' });
