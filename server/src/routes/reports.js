@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { formatBusinessDate, loadXReportRows, runZReport } from '../reportTotals.js';
 
 function parseIsoDate(value) {
   if (!value) return null;
@@ -126,36 +127,13 @@ export function createReportsRouter(pool) {
     }
 
     try {
-      const result = await pool.query(
-        `
-          WITH target_day AS (
-            SELECT
-              ${
-                day
-                  ? '$1::date'
-                  : "COALESCE(MAX(order_time::date), CURRENT_DATE)"
-              } AS day
-            FROM orders
-          )
-          SELECT
-            (target_day.day + (gs.h || ' hour')::interval) AS hour,
-            COALESCE(COUNT(o.order_id), 0) AS order_count,
-            COALESCE(SUM(o.price), 0) AS total_sales
-          FROM generate_series(0, 23) AS gs(h)
-          CROSS JOIN target_day
-          LEFT JOIN orders o
-            ON o.order_time >= target_day.day + (gs.h || ' hour')::interval
-           AND o.order_time <  target_day.day + ((gs.h + 1) || ' hour')::interval
-          GROUP BY target_day.day, gs.h
-          ORDER BY hour
-        `,
-        day ? [day] : []
-      );
+      const businessDay = day || formatBusinessDate(new Date());
+      const rows = await loadXReportRows(pool, businessDay);
 
       return response.json({
-        day: day ?? null,
-        count: result.rows.length,
-        rows: result.rows
+        day: businessDay,
+        count: rows.length,
+        rows
       });
     } catch (error) {
       return response.status(500).json({
@@ -181,7 +159,7 @@ export function createReportsRouter(pool) {
       });
     }
 
-    const day = parseIsoDate(request.query.day) ?? new Date().toISOString().slice(0, 10);
+    const day = parseIsoDate(request.query.day) ?? formatBusinessDate(new Date());
     if (request.query.day !== undefined && !parseIsoDate(request.query.day)) {
       return response.status(400).json({
         error: 'Invalid day parameter.',
@@ -189,24 +167,30 @@ export function createReportsRouter(pool) {
       });
     }
 
+    const client = await pool.connect();
     try {
-      const result = await pool.query(
-        `
-          SELECT
-            $1::date AS business_date,
-            COALESCE(COUNT(o.order_id), 0)::int AS total_orders,
-            COALESCE(SUM(o.price), 0) AS total_sales
-          FROM orders o
-          WHERE o.order_time::date = $1::date
-        `,
-        [day]
-      );
-
-      const row = result.rows[0] || { business_date: day, total_orders: 0, total_sales: 0 };
+      await client.query('BEGIN');
+      const row = await runZReport(client, day);
+      await client.query('COMMIT');
 
       if (format === 'csv') {
         const filename = `z_report_${day}.csv`;
-        return sendCsv(response, filename, ['business_date', 'total_orders', 'total_sales'], [row]);
+        return sendCsv(
+          response,
+          filename,
+          [
+            'business_date',
+            'total_orders',
+            'total_sales',
+            'total_cash_payments',
+            'total_card_payments',
+            'total_cash_amount',
+            'total_card_amount',
+            'z_report_generated',
+            'z_report_generated_at'
+          ],
+          [row]
+        );
       }
 
       return response.json({
@@ -214,13 +198,23 @@ export function createReportsRouter(pool) {
         row
       });
     } catch (error) {
+      await client.query('ROLLBACK').catch(() => {});
+      if (error.code === 'Z_REPORT_ALREADY_GENERATED') {
+        return response.status(409).json({
+          error: error.message,
+          details: error.generatedAt
+            ? `This business day was already closed out at ${error.generatedAt}.`
+            : 'This business day was already closed out.'
+        });
+      }
       return response.status(500).json({
         error: 'Failed to load Z-Report.',
         details: error.message
       });
+    } finally {
+      client.release();
     }
   });
 
   return router;
 }
-

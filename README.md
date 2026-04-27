@@ -1,4 +1,4 @@
-# Sharetea Web POS
+# MOONWAKE TEA ATELIER Web POS
 
 Full-stack point-of-sale web app: **React + Vite** client and **Express** API with optional **PostgreSQL**.
 

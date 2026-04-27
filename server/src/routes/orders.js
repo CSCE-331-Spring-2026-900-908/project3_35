@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticateRequest, requireRole } from '../auth.js';
+import { formatBusinessDate, getBusinessHour, normalizePaymentMethod, recordOrderInReportTotals } from '../reportTotals.js';
 
 function validateOrder(payload) {
   if (!payload.customerName || !Array.isArray(payload.items) || payload.items.length === 0) {
@@ -143,12 +144,80 @@ async function decrementInventory(client, requiredInventory) {
   }
 }
 
+async function syncTableSequence(client, tableName) {
+  const serialColumnResult = await client.query(
+    `
+      SELECT
+        a.attname AS column_name,
+        pg_get_serial_sequence($1, a.attname) AS sequence_name
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      JOIN pg_attribute a ON a.attrelid = c.oid
+      WHERE c.relname = $2
+        AND n.nspname = 'public'
+        AND a.attnum > 0
+        AND NOT a.attisdropped
+      ORDER BY a.attnum
+    `,
+    [`public.${tableName}`, tableName]
+  );
+
+  const serialColumn = serialColumnResult.rows.find((row) => row.sequence_name);
+  if (!serialColumn?.sequence_name || !serialColumn?.column_name) {
+    return;
+  }
+
+  const maxValueResult = await client.query(
+    `
+      SELECT COALESCE(MAX(${serialColumn.column_name}), 0) AS max_value
+      FROM ${tableName}
+    `
+  );
+
+  const nextValue = Number(maxValueResult.rows[0]?.max_value || 0) + 1;
+  if (!Number.isFinite(nextValue)) {
+    return;
+  }
+
+  await client.query(
+    `
+      SELECT setval($1, $2, false)
+    `,
+    [serialColumn.sequence_name, nextValue]
+  );
+}
+
+function mergeItemsForExistingSchema(items) {
+  const mergedItems = new Map();
+
+  for (const item of items) {
+    const key = String(item.menuItemId);
+    const current = mergedItems.get(key);
+
+    if (current) {
+      current.quantity += item.quantity;
+      continue;
+    }
+
+    mergedItems.set(key, {
+      ...item
+    });
+  }
+
+  return [...mergedItems.values()];
+}
+
 async function createOrderInExistingSchema(client, payload, items) {
   const employeeId = Number(payload.employeeId || process.env.DEFAULT_EMPLOYEE_ID || 1);
   const total = Number(payload.totals?.total || items.reduce((sum, item) => sum + item.total, 0));
+  const orderTimestamp = new Date();
+  const businessDate = formatBusinessDate(orderTimestamp);
+  const paymentMethod = normalizePaymentMethod(payload.paymentMethod);
 
   const requiredInventory = await calculateRequiredInventory(client, items);
   await decrementInventory(client, requiredInventory);
+  await syncTableSequence(client, 'orders');
+  await syncTableSequence(client, 'order_item');
 
   const orderInsert = await client.query(
     `
@@ -160,8 +229,9 @@ async function createOrderInExistingSchema(client, payload, items) {
   );
 
   const orderId = orderInsert.rows[0].order_id;
+  const mergedItems = mergeItemsForExistingSchema(items);
 
-  for (const item of items) {
+  for (const item of mergedItems) {
     const menuPriceResult = await client.query(
       `
         SELECT price_per_unit
@@ -185,6 +255,13 @@ async function createOrderInExistingSchema(client, payload, items) {
       [orderId, item.menuItemId, item.quantity, pricePerUnit]
     );
   }
+
+  await recordOrderInReportTotals(client, {
+    businessDate,
+    reportHour: getBusinessHour(orderTimestamp),
+    orderTotal: total,
+    paymentMethod
+  });
 
   return {
     orderId,
@@ -487,6 +564,9 @@ export function createOrdersRouter(pool) {
       );
 
       const orderId = orderInsert.rows[0].id;
+      const orderTimestamp = new Date();
+      const businessDate = formatBusinessDate(orderTimestamp);
+      const paymentMethod = normalizePaymentMethod(request.body?.paymentMethod);
 
       for (const item of items) {
         const itemInsert = await client.query(
@@ -517,6 +597,13 @@ export function createOrdersRouter(pool) {
           );
         }
       }
+
+      await recordOrderInReportTotals(client, {
+        businessDate,
+        reportHour: getBusinessHour(orderTimestamp),
+        orderTotal: Number(request.body?.totals?.total || 0),
+        paymentMethod
+      });
 
       await client.query('COMMIT');
       return response.status(201).json({ orderNumber, stored: true, schema: 'project3' });

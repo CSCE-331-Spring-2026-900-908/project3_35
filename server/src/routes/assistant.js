@@ -1,7 +1,65 @@
 import { Router } from 'express';
-import OpenAI from 'openai';
+import axios from 'axios';
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const FALLBACK_MODELS = String(process.env.GEMINI_FALLBACK_MODELS || 'gemini-2.5-flash-lite')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean)
+  .filter((value, index, list) => list.indexOf(value) === index && value !== MODEL);
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function isRetryableGeminiError(error) {
+  const status = Number(error?.response?.status || 0);
+  const message = String(error?.response?.data?.error?.message || error?.message || '').toLowerCase();
+
+  return status === 429
+    || status === 500
+    || status === 503
+    || message.includes('high demand')
+    || message.includes('overloaded')
+    || message.includes('try again later')
+    || message.includes('resource exhausted');
+}
+
+async function requestGeminiReply({ apiKey, model, systemContent, history }) {
+  const geminiResponse = await axios.post(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+    {
+      system_instruction: {
+        parts: [{ text: systemContent }]
+      },
+      contents: history.map((entry) => ({
+        role: entry.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: entry.content }]
+      })),
+      generationConfig: {
+        temperature: 0.5,
+        maxOutputTokens: 800
+      }
+    },
+    {
+      headers: {
+        'x-goog-api-key': apiKey,
+        'Content-Type': 'application/json'
+      },
+      timeout: 20000
+    }
+  );
+
+  const parts = geminiResponse.data?.candidates?.[0]?.content?.parts;
+  return Array.isArray(parts)
+    ? parts
+        .map((part) => (typeof part?.text === 'string' ? part.text : ''))
+        .join('')
+        .trim()
+    : '';
+}
 
 function clampHistory(messages, maxMessages) {
   if (!Array.isArray(messages) || messages.length === 0) {
@@ -38,11 +96,11 @@ export function createAssistantRouter() {
   const router = Router();
 
   router.post('/chat', async (request, response) => {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return response.status(503).json({
         error: 'Personal assistant is not configured.',
-        details: 'Add OPENAI_API_KEY to the server environment (e.g. server/.env).'
+        details: 'Add GEMINI_API_KEY to the server environment (e.g. server/.env).'
       });
     }
 
@@ -104,16 +162,48 @@ ${menuDigest}
 CURRENT CART (for recommendations; may be incomplete):
 ${cartLine}`;
 
-      const openai = new OpenAI({ apiKey });
+      const modelsToTry = [MODEL, ...FALLBACK_MODELS];
+      let reply = '';
+      let lastError = null;
 
-      const completion = await openai.chat.completions.create({
-        model: MODEL,
-        temperature: 0.5,
-        max_tokens: 800,
-        messages: [{ role: 'system', content: systemContent }, ...history]
-      });
+      for (const model of modelsToTry) {
+        try {
+          reply = await requestGeminiReply({
+            apiKey,
+            model,
+            systemContent,
+            history
+          });
+          if (reply) {
+            break;
+          }
+        } catch (error) {
+          lastError = error;
+          if (isRetryableGeminiError(error)) {
+            await sleep(600);
+            try {
+              reply = await requestGeminiReply({
+                apiKey,
+                model,
+                systemContent,
+                history
+              });
+              if (reply) {
+                break;
+              }
+            } catch (retryError) {
+              lastError = retryError;
+            }
+          } else {
+            throw error;
+          }
+        }
+      }
 
-      const reply = completion.choices?.[0]?.message?.content?.trim();
+      if (!reply && lastError) {
+        throw lastError;
+      }
+
       if (!reply) {
         return response.status(502).json({
           error: 'Assistant returned an empty response. Try again.'
@@ -122,10 +212,10 @@ ${cartLine}`;
 
       response.json({ reply });
     } catch (error) {
-      console.error('Assistant error:', error?.message ?? error);
+      console.error('Assistant error:', error?.response?.data || error?.message || error);
       response.status(500).json({
         error: 'Assistant request failed.',
-        details: error?.message || 'Unexpected error.'
+        details: error?.response?.data?.error?.message || error?.message || 'Unexpected error.'
       });
     }
   });

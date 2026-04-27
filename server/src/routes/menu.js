@@ -39,7 +39,7 @@ function normalizeExistingSchemaMenu(menuRows, toppingRows) {
     id: row.id,
     name: row.name,
     category: row.category,
-    description: row.description || `A signature ${row.category.toLowerCase()} from Sharetea.`,
+    description: row.description || `A signature ${row.category.toLowerCase()} from MOONWAKE TEA ATELIER.`,
     basePrice: Number(row.base_price),
     toppings
   }));

@@ -43,5 +43,5 @@ app.use('/api/weather', createWeatherRouter());
 app.use('/api/assistant', createAssistantRouter());
 
 app.listen(port, () => {
-  console.log(`Sharetea API listening on port ${port}`);
+  console.log(`MOONWAKE TEA ATELIER API listening on port ${port}`);
 });

@@ -344,7 +344,7 @@ export default function CustomerPage() {
   // Menu and translation state.
   const [menu, setMenu] = useState(normalizeMenu(fallbackMenu));
   const [translatedMenu, setTranslatedMenu] = useState(withDisplayFields(normalizeMenu(fallbackMenu)));
-
+  const [viewCart, setViewCart] = useState(false);
   // Current visible menu category.
   const [activeCategory, setActiveCategory] = useState('All');
 
@@ -1331,43 +1331,99 @@ export default function CustomerPage() {
           </div>
 
           <div className="menu-grid">
-            {visibleMenu.map((item) => (
-              <MenuCard
-                key={item.id}
-                item={item}
-                onCustomize={openCustomizer}
-                labels={translatedText}
-              />
-            ))}
+          {visibleMenu.map((item) => (
+            <MenuCard
+              key={item.id}
+              item={item}
+              onCustomize={openCustomizer}
+              labels={translatedText}
+            />
+          ))}
           </div>
         </section>
 
+        
+          {!viewCart && (
+            <button 
+              className="kiosk-cart-fab"
+              onClick={() => setViewCart(true)}
+              style={{
+                position: 'fixed', 
+                top: '20px',           // Anchored to top
+                right: '20px',         // Anchored to right
+                zIndex: 3000, 
+                padding: '12px 20px', 
+                background: '#6f3c20', 
+                color: '#fff',
+                borderRadius: '8px',   // Slightly sharper corners look better at the top
+                fontSize: '15px', 
+                fontWeight: 'bold',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
+                border: 'none', 
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <span style={{ fontSize: '18px' }}>🛒</span> 
+              <span>
+                {translatedText.cart} ({cart.length}) — ${total.toFixed(2)}
+              </span>
+            </button>
+          )}
+
+      {/* wrapping existing CartPanel in an overlay/modal */}
+        {viewCart && (
+        <div className="kiosk-cart-overlay" style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          background: 'rgba(0,0,0,0.7)', zIndex: 2000, display: 'flex', justifyContent: 'flex-end'
+          }}>
+          <div className="kiosk-cart-container" style={{
+            width: '100%', maxWidth: '450px', background: '#fff', height: '100%',
+            overflowY: 'auto', padding: '20px', position: 'relative', boxShadow: '-5px 0 15px rgba(0,0,0,0.2)'
+          }}>
+            <button 
+            onClick={() => setViewCart(false)}
+            style={{
+              background: '#a33a2b', color: '#fff', border: 'none', 
+              padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', 
+              marginBottom: '20px', cursor: 'pointer'
+              }}
+            >
+          {translatedText.close}
+        </button>
+
         <CartPanel
-          cart={translatedCart}
-          subtotal={subtotal}
-          tax={tax}
-          total={total}
-          checkoutForm={checkoutForm}
-          onCheckoutChange={handleCheckoutChange}
-          onCheckoutFocus={speakCheckoutFocus}
-          onRemoveItem={removeCartItem}
-          onSubmitOrder={handleSubmitOrder}
-          storeLocations={STORE_LOCATIONS}
-          selectedLocation={selectedLocation}
-          selectedLocationDistance={selectedLocationDistance}
-          onUseMyLocation={requestUserLocation}
-          locatingUser={locatingUser}
-          userCoordinates={userCoordinates}
-          routeCoordinates={directions.routeCoordinates}
-          directionsSummary={directions.summary}
-          directionsSteps={directions.steps}
-          directionsLoading={directions.loading}
-          directionsError={directions.error}
-          submitting={submitting}
-          statusMessage={statusMessage}
-          labels={translatedText}
-        />
-      </main>
+              cart={translatedCart}
+              subtotal={subtotal}
+              tax={tax}
+              total={total}
+              checkoutForm={checkoutForm}
+              onCheckoutChange={handleCheckoutChange}
+              onCheckoutFocus={speakCheckoutFocus}
+              onRemoveItem={removeCartItem}
+              onSubmitOrder={handleSubmitOrder}
+              storeLocations={STORE_LOCATIONS}
+              selectedLocation={selectedLocation}
+              selectedLocationDistance={selectedLocationDistance}
+              onUseMyLocation={requestUserLocation}
+              locatingUser={locatingUser}
+              userCoordinates={userCoordinates}
+              routeCoordinates={directions.routeCoordinates}
+              directionsSummary={directions.summary}
+              directionsSteps={directions.steps}
+              directionsLoading={directions.loading}
+              directionsError={directions.error}
+              submitting={submitting}
+              statusMessage={statusMessage}
+              labels={translatedText}
+            />
+          </div>
+        </div>
+      )}
+    </main>
 
       {selectedItem && selection ? (
         <CustomizerPanel
