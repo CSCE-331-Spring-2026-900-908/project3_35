@@ -9,7 +9,21 @@
 
 /* Grids */
 .pos-menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; align-content: start; overflow-y: auto; max-height: calc(100vh - 150px); }
-.dual-options-row { display: flex; gap: 20px; }
+/* Container for Sweetness and Ice Level */
+.dual-options-row { display: flex; gap: 40px;  margin-bottom: 25px;
+}
+
+.option-column { flex: 1; 
+}
+
+/* Header styling inside the customizer */
+.option-label { color: #2f211b; margin: 0 0 12px 0; font-size: 1.2rem; font-weight: bold;
+}
+
+/* The 2-column grid for the small percentage/ice buttons */
+.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px;}
+.options-grid .category-btn { width: 100%; padding: 12px 5px; text-align: center;}
+.options-grid .category-btn:last-child:nth-child(odd) {grid-column: 1;}
 .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .toppings-selection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
 
