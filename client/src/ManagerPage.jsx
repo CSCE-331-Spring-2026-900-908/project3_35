@@ -150,6 +150,7 @@ function InventoryManagePanel({
   onFormChange,
   onAddItem,
   onUpdateItem,
+  onRemoveItem,
   onSelectRow,
   onClearForm,
   busy
@@ -272,6 +273,14 @@ function InventoryManagePanel({
             disabled={!form.itemInventoryId || busy.inventoryUpdate}
           >
             {busy.inventoryUpdate ? 'Updating…' : 'Update Stock/Price/Category'}
+          </button>
+          <button
+            type="button"
+            style={styles.dangerButton}
+            onClick={onRemoveItem}
+            disabled={!form.itemInventoryId || busy.inventoryRemove}
+          >
+            {busy.inventoryRemove ? 'Removing…' : 'Remove Selected Item'}
           </button>
           <button type="button" style={styles.secondaryButton} onClick={onClearForm}>
             Clear Form
@@ -738,6 +747,7 @@ function ManagerDashboard() {
     employeeCreate: false,
     inventoryCreate: false,
     inventoryUpdate: false,
+    inventoryRemove: false,
     employeeHourlyUpdate: false,
     employeeUpdate: false,
     employeeTerminate: false,
@@ -1221,6 +1231,35 @@ function ManagerDashboard() {
     }
   }
 
+  async function handleRemoveInventoryItem() {
+    if (!inventoryForm.itemInventoryId) {
+      setStatus('Select an inventory item first.');
+      return;
+    }
+
+    setBusy((current) => ({ ...current, inventoryRemove: true }));
+    try {
+      const payload = await fetchJson(`/api/inventory/${inventoryForm.itemInventoryId}`, {
+        method: 'DELETE'
+      });
+      const removed = payload?.item;
+      if (removed) {
+        setInventory((current) =>
+          current.filter((row) => String(row.item_inventory_id) !== String(removed.item_inventory_id))
+        );
+        setStatus(`Removed inventory item "${removed.name}".`);
+      } else {
+        await loadInventory();
+        setStatus('Inventory item removed.');
+      }
+      clearInventoryForm();
+    } catch (error) {
+      setStatus(`Failed to remove inventory item: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, inventoryRemove: false }));
+    }
+  }
+
   function updateEmployeeEditForm(field, value) {
     setEmployeeEditForm((current) => ({
       ...current,
@@ -1451,6 +1490,7 @@ function ManagerDashboard() {
               onFormChange={updateInventoryForm}
               onAddItem={handleAddInventoryItem}
               onUpdateItem={handleUpdateInventoryItem}
+              onRemoveItem={handleRemoveInventoryItem}
               onSelectRow={selectInventoryRow}
               onClearForm={clearInventoryForm}
               busy={busy}

@@ -23,6 +23,7 @@ function parseApiError(payload) {
 function buildDefaultSelection(item) {
   return {
     itemId: item.id,
+    quantity: 1,
     size: 'Regular',
     sweetness: '75%',
     ice: 'Regular Ice',
@@ -136,7 +137,7 @@ function CashierDashboard() {
         id: `${selectedItem.id}-${Date.now()}`, // Unique ID for this specific drink
         menuItemId: selectedItem.id,
         name: selectedItem.name,
-        quantity: 1,
+        quantity: selection.quantity || 1,
         size: selection.size,
         sweetness: selection.sweetness,
         ice: selection.ice,
@@ -243,7 +244,11 @@ function CashierDashboard() {
     if (!selectedItem || !selection) {
       return;
     }
-    const next = { ...selection, [field]: value };
+    const normalizedValue =
+      field === 'quantity'
+        ? Math.max(1, Number.parseInt(value, 10) || 1)
+        : value;
+    const next = { ...selection, [field]: normalizedValue };
     next.total = calculateTotal(selectedItem, next);
     setSelection(next);
   }
@@ -323,6 +328,34 @@ function CashierDashboard() {
                         {size} {size === 'Large' ? '(+$0.90)' : ''}
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                <div className="option-section">
+                  <h3 className="option-label">Quantity</h3>
+                  <div className="category-row">
+                    <button
+                      onClick={() => updateSelection('quantity', Number(selection.quantity || 1) - 1)}
+                      className="category-btn"
+                      disabled={Number(selection.quantity || 1) <= 1}
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={selection.quantity || 1}
+                      onChange={(event) => updateSelection('quantity', event.target.value)}
+                      className="customer-input"
+                      style={{ maxWidth: '100px', textAlign: 'center' }}
+                    />
+                    <button
+                      onClick={() => updateSelection('quantity', Number(selection.quantity || 1) + 1)}
+                      className="category-btn"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
 
