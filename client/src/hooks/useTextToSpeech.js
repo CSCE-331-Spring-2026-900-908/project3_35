@@ -7,6 +7,8 @@ const LANGUAGE_TO_VOICE_LANG = {
   ko: 'ko-KR'
 };
 
+const TTS_RATE = 1.4;
+
 function cleanSpeechText(text) {
   return String(text || '')
     .replace(/\s+/g, ' ')
@@ -44,7 +46,7 @@ export default function useTextToSpeech(language) {
 
       const utterance = new SpeechSynthesisUtterance(cleanedText);
       utterance.lang = LANGUAGE_TO_VOICE_LANG[language] || 'en-US';
-      utterance.rate = 0.95;
+      utterance.rate = TTS_RATE;
       utterance.pitch = 1;
       utterance.volume = 1;
 
@@ -70,7 +72,7 @@ export default function useTextToSpeech(language) {
 
       const utterance = new SpeechSynthesisUtterance(cleanedText);
       utterance.lang = LANGUAGE_TO_VOICE_LANG[language] || 'en-US';
-      utterance.rate = 0.95;
+      utterance.rate = TTS_RATE;
       utterance.pitch = 1;
       utterance.volume = 1;
 

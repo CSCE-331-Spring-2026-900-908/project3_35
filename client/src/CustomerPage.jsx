@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import AccessibilityOrderGuide from './components/AccessibilityOrderGuide';
 import CartPanel from './components/CartPanel';
 import CustomizerPanel from './components/CustomizerPanel';
 import MenuCard from './components/MenuCard';
@@ -87,10 +88,8 @@ const baseText = {
   ttsOff: 'TTS Off',
   ttsEnable: 'Turn text-to-speech on',
   ttsDisable: 'Turn text-to-speech off',
-  ttsEnabledMessage: 'Text-to-speech is now on.',
-  ttsDisabledMessage: 'Text-to-speech is now off.',
   ttsInstructions:
-    'Text-to-speech is on. Use Tab to move through the page. Options will be read as you select them.',
+    'Text-to-speech is on. For faster blind-accessible ordering, open Accessible Ordering. It reads one drink at a time and lets you add default drinks without tapping every option.',
   selectedCustomization: 'Customizing {itemName}.',
   selectionChanged: '{field} changed to {value}.',
   toppingAdded: '{toppingName} added.',
@@ -102,7 +101,28 @@ const baseText = {
   nameFieldFocused: 'Customer name field. Enter the name for the order.',
   pickupTimeFocused: 'Pickup time field. Choose when the order should be ready.',
   orderTypeFocused: 'Order type field. Choose pickup or dine-in.',
-  locationFocused: 'Store location option: {locationName}. Address: {address}.'
+  locationFocused: 'Store location option: {locationName}. Address: {address}.',
+  categorySelected: 'Menu category selected: {category}.',
+
+  accessibleGuideOpen: 'Open Accessible Ordering',
+  accessibleGuideClose: 'Close Accessible Ordering',
+  accessibleGuideTitle: 'Accessible Ordering Guide',
+  accessibleGuideTag: 'Blind Accessibility',
+  accessibleGuideShortHelp:
+    'Use these large controls to hear the menu and build an order without tapping every menu card.',
+  accessibleGuideInstructions:
+    'Accessible ordering is open. Use the large buttons to move through the menu one drink at a time. You can read the item, customize it, add it with default options, or read your cart.',
+  readFullMenu: 'Read Full Menu',
+  readCurrentItem: 'Read Current Item',
+  previousItem: 'Previous Item',
+  nextItem: 'Next Item',
+  customizeThisItem: 'Customize This Drink',
+  addDefaultToCart: 'Add With Default Options',
+  readCart: 'Read Cart',
+  noMenuItemsAvailable: 'No menu items are available.',
+  cartSummaryEmpty: 'Your cart is empty.',
+  cartSummaryIntro: 'Your cart has {count} item. Total is {total}.',
+  cartSummaryIntroPlural: 'Your cart has {count} items. Total is {total}.'
 };
 
 const STORE_LOCATIONS = [
@@ -325,6 +345,8 @@ export default function CustomerPage() {
     steps: [],
     routeCoordinates: []
   });
+  const [accessibilityGuideOpen, setAccessibilityGuideOpen] = useState(false);
+  const [accessibilityGuideIndex, setAccessibilityGuideIndex] = useState(0);
 
   const {
     ttsEnabled,
@@ -510,6 +532,19 @@ export default function CustomerPage() {
       if (level === 'Regular Ice') return '보통 얼음';
     }
     return level;
+  }
+
+  function speakAccessibly(message) {
+    if (ttsEnabled) {
+      speak(message);
+      return;
+    }
+
+    toggleTts();
+
+    setTimeout(() => {
+      speakNow(message);
+    }, 100);
   }
 
   useEffect(() => {
@@ -708,6 +743,12 @@ export default function CustomerPage() {
     return translatedMenu.filter((item) => item.category === activeCategory);
   }, [activeCategory, translatedMenu]);
 
+  useEffect(() => {
+    if (accessibilityGuideIndex > visibleMenu.length - 1) {
+      setAccessibilityGuideIndex(0);
+    }
+  }, [accessibilityGuideIndex, visibleMenu.length]);
+
   const subtotal = useMemo(
     () => Number(cart.reduce((sum, item) => sum + Number(item.total || 0), 0).toFixed(2)),
     [cart]
@@ -723,12 +764,24 @@ export default function CustomerPage() {
       setTimeout(() => {
         speakNow(
           translatedText.ttsInstructions ||
-            'Text-to-speech is on. Use Tab to move through the page. Options will be read as you select them.'
+            'Text-to-speech is on. For faster blind-accessible ordering, open Accessible Ordering.'
         );
       }, 100);
     } else {
       cancelSpeech();
     }
+  }
+
+  function handleCategorySelect(category) {
+    setActiveCategory(category);
+    setAccessibilityGuideIndex(0);
+
+    speak(
+      (translatedText.categorySelected || 'Menu category selected: {category}.').replace(
+        '{category}',
+        getTranslatedCategory(category)
+      )
+    );
   }
 
   function openCustomizer(item) {
@@ -801,34 +854,38 @@ export default function CustomerPage() {
     );
   }
 
+  function buildCartItemFromSelection(item, currentSelection) {
+    const selectedToppings = (item.toppings || []).filter((topping) =>
+      currentSelection.toppings.includes(topping.name)
+    );
+
+    return {
+      id: `${item.id}-${Date.now()}`,
+      menuItemId: item.id,
+      name: item.name,
+      displayName: item.displayName || item.name,
+      quantity: 1,
+      size: currentSelection.size || 'Regular',
+      displaySize: translateSize(currentSelection.size || 'Regular'),
+      sweetness: currentSelection.sweetness,
+      ice: currentSelection.ice,
+      displayIce: translateIce(currentSelection.ice),
+      toppings: currentSelection.toppings,
+      displayToppings: selectedToppings.map((topping) => topping.displayName || topping.name),
+      toppingInventoryIds: selectedToppings
+        .map((topping) => topping.id)
+        .filter((value) => Number.isInteger(value)),
+      notes: currentSelection.notes.trim(),
+      total: currentSelection.total
+    };
+  }
+
   function addToCart() {
     if (!selectedItem || !selection) {
       return;
     }
 
-    const selectedToppings = (selectedItem.toppings || []).filter((topping) =>
-      selection.toppings.includes(topping.name)
-    );
-
-    const cartItem = {
-      id: `${selectedItem.id}-${Date.now()}`,
-      menuItemId: selectedItem.id,
-      name: selectedItem.name,
-      displayName: selectedItem.displayName || selectedItem.name,
-      quantity: 1,
-      size: selection.size || 'Regular',
-      displaySize: translateSize(selection.size || 'Regular'),
-      sweetness: selection.sweetness,
-      ice: selection.ice,
-      displayIce: translateIce(selection.ice),
-      toppings: selection.toppings,
-      displayToppings: selectedToppings.map((topping) => topping.displayName || topping.name),
-      toppingInventoryIds: selectedToppings
-        .map((topping) => topping.id)
-        .filter((value) => Number.isInteger(value)),
-      notes: selection.notes.trim(),
-      total: selection.total
-    };
+    const cartItem = buildCartItemFromSelection(selectedItem, selection);
 
     setCart((current) => [...current, cartItem]);
 
@@ -842,6 +899,52 @@ export default function CustomerPage() {
 
     setSelectedItem(null);
     setSelection(null);
+  }
+
+  function addDefaultItemToCart(item) {
+    const translatedItem = translatedMenu.find((entry) => entry.id === item.id) || item;
+    const defaultSelection = buildDefaultSelection(translatedItem);
+    defaultSelection.total = calculateTotal(translatedItem, defaultSelection);
+
+    const cartItem = buildCartItemFromSelection(translatedItem, defaultSelection);
+
+    setCart((current) => [...current, cartItem]);
+
+    const message = (translatedText.addedToCart || '{itemName} added to cart.').replace(
+      '{itemName}',
+      translatedItem.displayName || translatedItem.name
+    );
+
+    setStatusMessage(message);
+    speakAccessibly(`${message} Default options are regular size, 75 percent sweetness, and regular ice.`);
+  }
+
+  function readCartSummary() {
+    if (cart.length === 0) {
+      speakAccessibly(translatedText.cartSummaryEmpty || 'Your cart is empty.');
+      return;
+    }
+
+    const introTemplate =
+      cart.length === 1
+        ? translatedText.cartSummaryIntro || 'Your cart has {count} item. Total is {total}.'
+        : translatedText.cartSummaryIntroPlural || 'Your cart has {count} items. Total is {total}.';
+
+    const intro = introTemplate
+      .replace('{count}', String(cart.length))
+      .replace('{total}', `$${total.toFixed(2)}`);
+
+    const itemText = cart
+      .map((item, index) => {
+        const toppings =
+          Array.isArray(item.displayToppings) && item.displayToppings.length > 0
+            ? `Toppings: ${item.displayToppings.join(', ')}.`
+            : 'No toppings.';
+        return `${index + 1}. ${item.displayName || item.name}. ${item.displaySize || item.size}. Sweetness ${item.sweetness}. ${item.displayIce || item.ice}. ${toppings} Price ${Number(item.total || 0).toFixed(2)}.`;
+      })
+      .join(' ');
+
+    speakAccessibly(`${intro} ${itemText}`);
   }
 
   function removeCartItem(id) {
@@ -1121,6 +1224,19 @@ export default function CustomerPage() {
 
       <main className="layout">
         <section className="menu-section">
+          <AccessibilityOrderGuide
+            open={accessibilityGuideOpen}
+            onToggle={setAccessibilityGuideOpen}
+            menuItems={visibleMenu}
+            selectedIndex={accessibilityGuideIndex}
+            onSelectIndex={setAccessibilityGuideIndex}
+            onCustomize={openCustomizer}
+            onAddDefault={addDefaultItemToCart}
+            onReadCart={readCartSummary}
+            labels={translatedText}
+            speakText={speakAccessibly}
+          />
+
           <div className="menu-toolbar">
             <div>
               <p className="section-tag">{translatedText.menuLabel}</p>
@@ -1134,7 +1250,7 @@ export default function CustomerPage() {
                   type="button"
                   className={`choice-chip ${activeCategory === category ? 'choice-chip--selected' : ''}`}
                   aria-pressed={activeCategory === category}
-                  onClick={() => setActiveCategory(category)}
+                  onClick={() => handleCategorySelect(category)}
                 >
                   {getTranslatedCategory(category)}
                 </button>

@@ -825,3 +825,234 @@ textarea:focus-visible {
 .tts-toggle__text {
   white-space: nowrap;
 }
+
+.accessibility-guide {
+  margin-bottom: 1.25rem;
+}
+
+.accessibility-guide__toggle {
+  width: 100%;
+  border: 2px solid #6d3d1f;
+  background: #f6e2c7;
+  color: #2b1b12;
+  border-radius: 1.25rem;
+  padding: 1rem 1.25rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(45, 27, 14, 0.12);
+}
+
+.accessibility-guide__panel {
+  margin-top: 1rem;
+  border: 2px solid rgba(109, 61, 31, 0.35);
+  background: rgba(255, 250, 242, 0.96);
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  box-shadow: 0 18px 40px rgba(45, 27, 14, 0.12);
+}
+
+.accessibility-guide__header {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.accessibility-guide__header h2 {
+  margin: 0;
+}
+
+.accessibility-guide__header p {
+  margin: 0;
+  color: #5f4a3b;
+}
+
+.accessibility-guide__selected {
+  display: grid;
+  gap: 0.45rem;
+  background: #ffffff;
+  border: 1px solid rgba(109, 61, 31, 0.18);
+  border-radius: 1.25rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.accessibility-guide__selected h3 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.accessibility-guide__selected p {
+  margin: 0;
+}
+
+.accessibility-guide__selected strong {
+  font-size: 1.15rem;
+}
+
+.accessibility-guide__count {
+  font-weight: 800;
+  color: #6d3d1f;
+}
+
+.accessibility-guide__controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.accessibility-guide__controls .button {
+  min-height: 3.75rem;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .accessibility-guide__controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+.customizer-accessibility {
+  border: 2px solid rgba(109, 61, 31, 0.3);
+  background: rgba(255, 250, 242, 0.92);
+  border-radius: 1.25rem;
+  padding: 1rem;
+}
+
+.customizer-accessibility__header {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.customizer-accessibility__header h3 {
+  margin: 0;
+}
+
+.customizer-accessibility__header p {
+  margin: 0;
+  color: #6d5a4d;
+}
+
+.customizer-accessibility__controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.customizer-accessibility__controls .button {
+  min-height: 3.5rem;
+  font-weight: 800;
+}
+
+.topping-helper {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.topping-helper__current {
+  background: #ffffff;
+  border: 1px solid rgba(109, 61, 31, 0.18);
+  border-radius: 1rem;
+  padding: 1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.topping-helper__current h4 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.topping-helper__current p {
+  margin: 0;
+}
+
+.topping-helper__count {
+  font-weight: 800;
+  color: #6d3d1f;
+}
+
+.topping-helper__controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.topping-helper__controls .button {
+  min-height: 3.5rem;
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .customizer-accessibility__controls,
+  .topping-helper__controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+.customizer-accessibility {
+  display: none;
+}
+
+.customizer-quick-audio {
+  display: flex;
+  justify-content: flex-start;
+  margin: 0.75rem 0 1rem;
+}
+
+.toppings-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.toppings-heading-row h3 {
+  margin: 0;
+}
+
+.topping-helper--compact {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(109, 61, 31, 0.22);
+  background: rgba(255, 250, 242, 0.8);
+  border-radius: 1rem;
+  padding: 0.8rem;
+}
+
+.topping-helper--compact .topping-helper__current {
+  padding: 0.75rem;
+  border-radius: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.topping-helper--compact .topping-helper__current h4 {
+  font-size: 1.05rem;
+}
+
+.topping-helper--compact .topping-helper__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.topping-helper--compact .button {
+  min-height: auto;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 720px) {
+  .toppings-heading-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .topping-helper--compact .topping-helper__controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

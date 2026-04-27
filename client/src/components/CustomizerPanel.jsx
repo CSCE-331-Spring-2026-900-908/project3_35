@@ -1,6 +1,63 @@
+import { useEffect, useMemo, useState } from 'react';
+
 const SIZE_CHOICES = ['Regular', 'Large'];
 const SWEETNESS_CHOICES = ['0%', '25%', '50%', '75%', '100%'];
 const ICE_CHOICES = ['No Ice', 'Light Ice', 'Regular Ice'];
+
+const TTS_RATE = 1.45;
+
+function speakText(text) {
+  if (!('speechSynthesis' in window)) {
+    return;
+  }
+
+  const cleaned = String(text || '').replace(/\s+/g, ' ').trim();
+
+  if (!cleaned) {
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(cleaned);
+  utterance.rate = 1.4;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+
+  window.speechSynthesis.speak(utterance);
+}
+
+function formatToppingPrice(price) {
+  return `$${Number(price || 0).toFixed(2)}`;
+}
+
+function buildToppingDescription(topping, index, totalCount, selected) {
+  if (!topping) {
+    return 'No topping is selected.';
+  }
+
+  const name = topping.displayName || topping.name;
+  const price = formatToppingPrice(topping.price);
+  const selectedText = selected ? 'Selected.' : 'Not selected.';
+
+  return `Topping ${index + 1} of ${totalCount}. ${name}. Price ${price}. ${selectedText}`;
+}
+
+function buildSelectedToppingsSummary(item, selection) {
+  const selectedToppings = (item.toppings || []).filter((topping) =>
+    selection.toppings.includes(topping.name)
+  );
+
+  if (selectedToppings.length === 0) {
+    return 'No toppings are currently selected.';
+  }
+
+  const toppingNames = selectedToppings
+    .map((topping) => `${topping.displayName || topping.name}, ${formatToppingPrice(topping.price)}`)
+    .join('. ');
+
+  return `Selected toppings: ${toppingNames}.`;
+}
 
 export default function CustomizerPanel({
   item,
@@ -13,6 +70,167 @@ export default function CustomizerPanel({
   translateSize,
   translateIce
 }) {
+  const [toppingHelperOpen, setToppingHelperOpen] = useState(false);
+  const [activeToppingIndex, setActiveToppingIndex] = useState(0);
+
+  const toppings = useMemo(() => {
+    return Array.isArray(item?.toppings) ? item.toppings : [];
+  }, [item]);
+
+  const activeTopping = toppings[activeToppingIndex] || null;
+  const activeToppingSelected = activeTopping
+    ? selection.toppings.includes(activeTopping.name)
+    : false;
+
+  useEffect(() => {
+    if (activeToppingIndex > toppings.length - 1) {
+      setActiveToppingIndex(0);
+    }
+  }, [activeToppingIndex, toppings.length]);
+
+  function readCurrentDrink() {
+    const selectedToppingsText = buildSelectedToppingsSummary(item, selection);
+    const message = `${item.displayName || item.name}. Size ${translateSize(selection.size)}. Sweetness ${selection.sweetness}. Ice ${translateIce(selection.ice)}. Drink total $${selection.total.toFixed(2)}. ${selectedToppingsText}`;
+
+    speakText(message);
+  }
+
+  function toggleToppingHelper() {
+    const nextOpen = !toppingHelperOpen;
+    setToppingHelperOpen(nextOpen);
+
+    if (!nextOpen) {
+      return;
+    }
+
+    if (toppings.length === 0) {
+      speakText('This drink has no available toppings.');
+      return;
+    }
+
+    speakText(
+      `Topping helper opened. Use next topping, previous topping, and toggle topping. ${buildToppingDescription(
+        activeTopping,
+        activeToppingIndex,
+        toppings.length,
+        activeToppingSelected
+      )}`
+    );
+  }
+
+  function readCurrentTopping() {
+    if (!activeTopping) {
+      speakText('This drink has no available toppings.');
+      return;
+    }
+
+    speakText(
+      buildToppingDescription(
+        activeTopping,
+        activeToppingIndex,
+        toppings.length,
+        activeToppingSelected
+      )
+    );
+  }
+
+  function goToPreviousTopping() {
+    if (toppings.length === 0) {
+      speakText('This drink has no available toppings.');
+      return;
+    }
+
+    const nextIndex = activeToppingIndex <= 0 ? toppings.length - 1 : activeToppingIndex - 1;
+    const nextTopping = toppings[nextIndex];
+    const nextSelected = selection.toppings.includes(nextTopping.name);
+
+    setActiveToppingIndex(nextIndex);
+
+    speakText(buildToppingDescription(nextTopping, nextIndex, toppings.length, nextSelected));
+  }
+
+  function goToNextTopping() {
+    if (toppings.length === 0) {
+      speakText('This drink has no available toppings.');
+      return;
+    }
+
+    const nextIndex = activeToppingIndex >= toppings.length - 1 ? 0 : activeToppingIndex + 1;
+    const nextTopping = toppings[nextIndex];
+    const nextSelected = selection.toppings.includes(nextTopping.name);
+
+    setActiveToppingIndex(nextIndex);
+
+    speakText(buildToppingDescription(nextTopping, nextIndex, toppings.length, nextSelected));
+  }
+
+  function toggleCurrentTopping() {
+    if (!activeTopping) {
+      speakText('This drink has no available toppings.');
+      return;
+    }
+
+    const wasSelected = selection.toppings.includes(activeTopping.name);
+    onToggleTopping(activeTopping.name);
+
+    const name = activeTopping.displayName || activeTopping.name;
+    const price = formatToppingPrice(activeTopping.price);
+
+    speakText(
+      wasSelected
+        ? `${name} removed. Price ${price}.`
+        : `${name} added. Price ${price}.`
+    );
+  }
+
+  function readSelectedToppings() {
+    speakText(buildSelectedToppingsSummary(item, selection));
+  }
+
+  function readAllToppings() {
+    if (toppings.length === 0) {
+      speakText('This drink has no available toppings.');
+      return;
+    }
+
+    const toppingText = toppings
+      .map((topping, index) => {
+        const name = topping.displayName || topping.name;
+        const price = formatToppingPrice(topping.price);
+        const selected = selection.toppings.includes(topping.name)
+          ? 'selected'
+          : 'not selected';
+
+        return `${index + 1}. ${name}, ${price}, ${selected}.`;
+      })
+      .join(' ');
+
+    speakText(`Available toppings. ${toppingText}`);
+  }
+
+  function clearSelectedToppings() {
+    if (selection.toppings.length === 0) {
+      speakText('No toppings are currently selected.');
+      return;
+    }
+
+    selection.toppings.forEach((toppingName) => {
+      onToggleTopping(toppingName);
+    });
+
+    speakText('All toppings removed.');
+  }
+
+  function addToCartWithSpeech() {
+    const selectedToppingsText = buildSelectedToppingsSummary(item, selection);
+
+    speakText(
+      `${item.displayName || item.name} added to cart. Size ${translateSize(selection.size)}. Sweetness ${selection.sweetness}. Ice ${translateIce(selection.ice)}. ${selectedToppingsText} Drink total $${selection.total.toFixed(2)}.`
+    );
+
+    onAddToCart();
+  }
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <aside
@@ -33,6 +251,16 @@ export default function CustomizerPanel({
         </div>
 
         <p className="customizer__description">{item.displayDescription || item.description}</p>
+
+        <div className="customizer-quick-audio">
+          <button
+            type="button"
+            className="button button--ghost button--small"
+            onClick={readCurrentDrink}
+          >
+            Read Drink
+          </button>
+        </div>
 
         <section className="customizer__section">
           <h3>{labels.size}</h3>
@@ -86,9 +314,70 @@ export default function CustomizerPanel({
         </section>
 
         <section className="customizer__section">
-          <h3>{labels.toppings}</h3>
+          <div className="toppings-heading-row">
+            <h3>{labels.toppings}</h3>
+            <button
+              type="button"
+              className="button button--ghost button--small"
+              onClick={toggleToppingHelper}
+              aria-expanded={toppingHelperOpen}
+            >
+              {toppingHelperOpen ? 'Hide Helper' : 'Topping Helper'}
+            </button>
+          </div>
+
+          {toppingHelperOpen ? (
+            <div className="topping-helper topping-helper--compact">
+              <article className="topping-helper__current" aria-live="polite">
+                <p className="topping-helper__count">
+                  {toppings.length > 0 ? `${activeToppingIndex + 1} / ${toppings.length}` : '0 / 0'}
+                </p>
+                <h4>
+                  {activeTopping
+                    ? activeTopping.displayName || activeTopping.name
+                    : 'No toppings available'}
+                </h4>
+                {activeTopping ? (
+                  <p>
+                    {formatToppingPrice(activeTopping.price)} • {activeToppingSelected ? 'Selected' : 'Not selected'}
+                  </p>
+                ) : null}
+              </article>
+
+              <div className="topping-helper__controls topping-helper__controls--compact">
+                <button type="button" className="button button--ghost button--small" onClick={readCurrentTopping}>
+                  Read
+                </button>
+
+                <button type="button" className="button button--ghost button--small" onClick={goToPreviousTopping}>
+                  Previous
+                </button>
+
+                <button type="button" className="button button--ghost button--small" onClick={goToNextTopping}>
+                  Next
+                </button>
+
+                <button type="button" className="button button--primary button--small" onClick={toggleCurrentTopping}>
+                  Toggle
+                </button>
+
+                <button type="button" className="button button--ghost button--small" onClick={readSelectedToppings}>
+                  Selected
+                </button>
+
+                <button type="button" className="button button--ghost button--small" onClick={readAllToppings}>
+                  Read All
+                </button>
+
+                <button type="button" className="button button--ghost button--small" onClick={clearSelectedToppings}>
+                  Clear
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           <div className="toppings-grid">
-            {item.toppings.map((topping) => {
+            {toppings.map((topping) => {
               const selected = selection.toppings.includes(topping.name);
               return (
                 <button
@@ -121,7 +410,7 @@ export default function CustomizerPanel({
             <span>{labels.drinkTotal}</span>
             <strong>${selection.total.toFixed(2)}</strong>
           </div>
-          <button type="button" className="button button--primary" onClick={onAddToCart}>
+          <button type="button" className="button button--primary" onClick={addToCartWithSpeech}>
             {labels.addToCart}
           </button>
         </div>
