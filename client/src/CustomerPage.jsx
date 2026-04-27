@@ -3,7 +3,9 @@ import CartPanel from './components/CartPanel';
 import CustomizerPanel from './components/CustomizerPanel';
 import MenuCard from './components/MenuCard';
 import PersonalAssistant from './components/PersonalAssistant';
+import TtsToggle from './components/TtsToggle';
 import { apiUrl } from './apiBase';
+import useTextToSpeech from './hooks/useTextToSpeech';
 
 const TAX_RATE = 0.0825;
 
@@ -79,7 +81,28 @@ const baseText = {
   assistantSend: 'Send',
   assistantThinking: 'Thinking…',
   assistantClose: 'Close assistant',
-  assistantYou: 'You'
+  assistantYou: 'You',
+
+  ttsOn: 'TTS On',
+  ttsOff: 'TTS Off',
+  ttsEnable: 'Turn text-to-speech on',
+  ttsDisable: 'Turn text-to-speech off',
+  ttsEnabledMessage: 'Text-to-speech is now on.',
+  ttsDisabledMessage: 'Text-to-speech is now off.',
+  ttsInstructions:
+    'Text-to-speech is on. Use Tab to move through the page. Options will be read as you select them.',
+  selectedCustomization: 'Customizing {itemName}.',
+  selectionChanged: '{field} changed to {value}.',
+  toppingAdded: '{toppingName} added.',
+  toppingRemoved: '{toppingName} removed.',
+  itemRemoved: '{itemName} removed from cart.',
+  pickupTimeSelected: 'Pickup time selected: {value}.',
+  orderTypeSelected: 'Order type selected: {value}.',
+  pickupLocationSelected: 'Pickup location selected: {locationName}. Address: {address}.',
+  nameFieldFocused: 'Customer name field. Enter the name for the order.',
+  pickupTimeFocused: 'Pickup time field. Choose when the order should be ready.',
+  orderTypeFocused: 'Order type field. Choose pickup or dine-in.',
+  locationFocused: 'Store location option: {locationName}. Address: {address}.'
 };
 
 const STORE_LOCATIONS = [
@@ -302,6 +325,14 @@ export default function CustomerPage() {
     steps: [],
     routeCoordinates: []
   });
+
+  const {
+    ttsEnabled,
+    toggleTts,
+    speak,
+    speakNow,
+    cancelSpeech
+  } = useTextToSpeech(language);
 
   const selectedLocation = useMemo(
     () => STORE_LOCATIONS.find((location) => location.id === checkoutForm.pickupLocationId) || STORE_LOCATIONS[0],
@@ -684,12 +715,35 @@ export default function CustomerPage() {
   const tax = Number((subtotal * TAX_RATE).toFixed(2));
   const total = Number((subtotal + tax).toFixed(2));
 
+  function handleToggleTts() {
+    const nextEnabled = !ttsEnabled;
+    toggleTts();
+
+    if (nextEnabled) {
+      setTimeout(() => {
+        speakNow(
+          translatedText.ttsInstructions ||
+            'Text-to-speech is on. Use Tab to move through the page. Options will be read as you select them.'
+        );
+      }, 100);
+    } else {
+      cancelSpeech();
+    }
+  }
+
   function openCustomizer(item) {
     const translatedItem = translatedMenu.find((entry) => entry.id === item.id) || item;
     const nextSelection = buildDefaultSelection(translatedItem);
     nextSelection.total = calculateTotal(translatedItem, nextSelection);
     setSelectedItem(translatedItem);
     setSelection(nextSelection);
+
+    speak(
+      (translatedText.selectedCustomization || 'Customizing {itemName}.').replace(
+        '{itemName}',
+        translatedItem.displayName || translatedItem.name
+      )
+    );
   }
 
   function updateSelection(field, value) {
@@ -700,6 +754,26 @@ export default function CustomerPage() {
     const next = { ...selection, [field]: value };
     next.total = calculateTotal(selectedItem, next);
     setSelection(next);
+
+    if (field === 'notes') {
+      return;
+    }
+
+    let spokenValue = value;
+
+    if (field === 'size') {
+      spokenValue = translateSize(value);
+    }
+
+    if (field === 'ice') {
+      spokenValue = translateIce(value);
+    }
+
+    speak(
+      (translatedText.selectionChanged || '{field} changed to {value}.')
+        .replace('{field}', field)
+        .replace('{value}', spokenValue)
+    );
   }
 
   function toggleTopping(name) {
@@ -707,13 +781,24 @@ export default function CustomerPage() {
       return;
     }
 
-    const toppings = selection.toppings.includes(name)
+    const wasSelected = selection.toppings.includes(name);
+
+    const toppings = wasSelected
       ? selection.toppings.filter((item) => item !== name)
       : [...selection.toppings, name];
 
     const next = { ...selection, toppings };
     next.total = calculateTotal(selectedItem, next);
     setSelection(next);
+
+    const topping = selectedItem.toppings.find((entry) => entry.name === name);
+    const toppingName = topping?.displayName || topping?.name || name;
+
+    speak(
+      wasSelected
+        ? (translatedText.toppingRemoved || '{toppingName} removed.').replace('{toppingName}', toppingName)
+        : (translatedText.toppingAdded || '{toppingName} added.').replace('{toppingName}', toppingName)
+    );
   }
 
   function addToCart() {
@@ -747,18 +832,31 @@ export default function CustomerPage() {
 
     setCart((current) => [...current, cartItem]);
 
-    setStatusMessage(
-      (translatedText.addedToCart || '{itemName} added to cart.').replace(
-        '{itemName}',
-        selectedItem.displayName || selectedItem.name
-      )
+    const message = (translatedText.addedToCart || '{itemName} added to cart.').replace(
+      '{itemName}',
+      selectedItem.displayName || selectedItem.name
     );
+
+    setStatusMessage(message);
+    speak(message);
+
     setSelectedItem(null);
     setSelection(null);
   }
 
   function removeCartItem(id) {
+    const removedItem = cart.find((item) => item.id === id);
+
     setCart((current) => current.filter((item) => item.id !== id));
+
+    if (removedItem) {
+      const message = (translatedText.itemRemoved || '{itemName} removed from cart.').replace(
+        '{itemName}',
+        removedItem.displayName || removedItem.name || 'Item'
+      );
+
+      speak(message);
+    }
   }
 
   function closeCustomizer() {
@@ -768,17 +866,88 @@ export default function CustomerPage() {
 
   function handleCheckoutChange(event) {
     const { name, value } = event.target;
+
     setCheckoutForm((current) => ({ ...current, [name]: value }));
+
+    if (name === 'pickupWindow') {
+      const pickupTimeLabels = {
+        ASAP: translatedText.asap || 'ASAP',
+        '10 minutes': translatedText.tenMinutes || '10 minutes',
+        '20 minutes': translatedText.twentyMinutes || '20 minutes',
+        '30 minutes': translatedText.thirtyMinutes || '30 minutes'
+      };
+
+      speak(
+        (translatedText.pickupTimeSelected || 'Pickup time selected: {value}.').replace(
+          '{value}',
+          pickupTimeLabels[value] || value
+        )
+      );
+    }
+
+    if (name === 'orderType') {
+      const orderTypeLabels = {
+        Pickup: translatedText.pickup || 'Pickup',
+        'Dine-In': translatedText.dineIn || 'Dine-In'
+      };
+
+      speak(
+        (translatedText.orderTypeSelected || 'Order type selected: {value}.').replace(
+          '{value}',
+          orderTypeLabels[value] || value
+        )
+      );
+    }
+
+    if (name === 'pickupLocationId') {
+      const location = STORE_LOCATIONS.find((entry) => entry.id === value);
+
+      if (location) {
+        speak(
+          (translatedText.pickupLocationSelected || 'Pickup location selected: {locationName}. Address: {address}.')
+            .replace('{locationName}', location.name)
+            .replace('{address}', location.address)
+        );
+      }
+    }
+  }
+
+  function speakCheckoutFocus(fieldName, extraValue = '') {
+    if (fieldName === 'customerName') {
+      speak(translatedText.nameFieldFocused || 'Customer name field. Enter the name for the order.');
+    }
+
+    if (fieldName === 'pickupWindow') {
+      speak(translatedText.pickupTimeFocused || 'Pickup time field. Choose when the order should be ready.');
+    }
+
+    if (fieldName === 'orderType') {
+      speak(translatedText.orderTypeFocused || 'Order type field. Choose pickup or dine-in.');
+    }
+
+    if (fieldName === 'pickupLocationId') {
+      const location = STORE_LOCATIONS.find((entry) => entry.id === extraValue);
+
+      if (location) {
+        speak(
+          (translatedText.locationFocused || 'Store location option: {locationName}. Address: {address}.')
+            .replace('{locationName}', location.name)
+            .replace('{address}', location.address)
+        );
+      }
+    }
   }
 
   function requestUserLocation() {
     if (!navigator.geolocation) {
       setStatusMessage(translatedText.locationPermissionError);
+      speak(translatedText.locationPermissionError);
       return;
     }
 
     setLocatingUser(true);
     setStatusMessage(translatedText.locating || 'Finding your location...');
+    speak(translatedText.locating || 'Finding your location...');
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -793,18 +962,22 @@ export default function CustomerPage() {
         );
         if (distanceText === null) {
           setStatusMessage(translatedText.statusReady);
+          speak(translatedText.statusReady);
           return;
         }
-        setStatusMessage(
-          `${selectedLocation.name} • ${(translatedText.distanceAway || '{distance} miles away').replace(
-            '{distance}',
-            distanceText.toFixed(1)
-          )}`
-        );
+
+        const message = `${selectedLocation.name} • ${(translatedText.distanceAway || '{distance} miles away').replace(
+          '{distance}',
+          distanceText.toFixed(1)
+        )}`;
+
+        setStatusMessage(message);
+        speak(message);
       },
       () => {
         setLocatingUser(false);
         setStatusMessage(translatedText.locationPermissionError);
+        speak(translatedText.locationPermissionError);
       },
       {
         enableHighAccuracy: true,
@@ -875,17 +1048,20 @@ export default function CustomerPage() {
         orderType: 'Pickup',
         pickupLocationId: STORE_LOCATIONS[0].id
       });
-      setStatusMessage(
-        (translatedText.orderConfirmed || 'Order confirmed. Ticket {orderNumber} is in progress.')
-          .replace('{orderNumber}', result.orderNumber)
-      );
+
+      const message = (translatedText.orderConfirmed || 'Order confirmed. Ticket {orderNumber} is in progress.')
+        .replace('{orderNumber}', result.orderNumber);
+
+      setStatusMessage(message);
+      speak(message);
     } catch (error) {
-      setStatusMessage(
-        (translatedText.orderFailed || 'Order could not be submitted: {message}').replace(
-          '{message}',
-          error.message
-        )
+      const message = (translatedText.orderFailed || 'Order could not be submitted: {message}').replace(
+        '{message}',
+        error.message
       );
+
+      setStatusMessage(message);
+      speak(message);
     } finally {
       setSubmitting(false);
     }
@@ -924,6 +1100,12 @@ export default function CustomerPage() {
               <option value="zh-CN">简体中文</option>
               <option value="ko">한국어</option>
             </select>
+
+            <TtsToggle
+              enabled={ttsEnabled}
+              onToggle={handleToggleTts}
+              labels={translatedText}
+            />
           </div>
 
           <h1>{translatedText.heroTitle}</h1>
@@ -979,6 +1161,7 @@ export default function CustomerPage() {
           total={total}
           checkoutForm={checkoutForm}
           onCheckoutChange={handleCheckoutChange}
+          onCheckoutFocus={speakCheckoutFocus}
           onRemoveItem={removeCartItem}
           onSubmitOrder={handleSubmitOrder}
           storeLocations={STORE_LOCATIONS}
@@ -1012,7 +1195,14 @@ export default function CustomerPage() {
         />
       ) : null}
 
-      <PersonalAssistant menu={menu} cart={cart} language={language} labels={translatedText} />
+      <PersonalAssistant
+        menu={menu}
+        cart={cart}
+        language={language}
+        labels={translatedText}
+        ttsEnabled={ttsEnabled}
+        speakText={speak}
+      />
     </div>
   );
 }

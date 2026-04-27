@@ -42,7 +42,14 @@ function buildCartSummary(cart) {
     .join('\n');
 }
 
-export default function PersonalAssistant({ menu, cart, language, labels }) {
+export default function PersonalAssistant({
+  menu,
+  cart,
+  language,
+  labels,
+  ttsEnabled,
+  speakText
+}) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
@@ -67,9 +74,15 @@ export default function PersonalAssistant({ menu, cart, language, labels }) {
     const welcome =
       labels?.assistantWelcome ||
       'Hi! Ask me about our drinks, toppings, dietary questions, or how checkout works.';
+
     setMessages([{ role: 'assistant', content: welcome }]);
+
+    if (ttsEnabled && typeof speakText === 'function') {
+      speakText(welcome);
+    }
+
     return undefined;
-  }, [open, messages.length, labels?.assistantWelcome]);
+  }, [open, messages.length, labels?.assistantWelcome, ttsEnabled, speakText]);
 
   async function handleSend(event) {
     event.preventDefault();
@@ -111,8 +124,17 @@ export default function PersonalAssistant({ menu, cart, language, labels }) {
       }
 
       setMessages((current) => [...current, { role: 'assistant', content: reply }]);
+
+      if (ttsEnabled && typeof speakText === 'function') {
+        speakText(reply);
+      }
     } catch (sendError) {
-      setError(sendError.message || 'Something went wrong.');
+      const errorMessage = sendError.message || 'Something went wrong.';
+      setError(errorMessage);
+
+      if (ttsEnabled && typeof speakText === 'function') {
+        speakText(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

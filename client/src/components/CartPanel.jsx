@@ -23,6 +23,7 @@ export default function CartPanel({
   total,
   checkoutForm,
   onCheckoutChange,
+  onCheckoutFocus,
   onRemoveItem,
   onSubmitOrder,
   storeLocations,
@@ -92,6 +93,7 @@ export default function CartPanel({
             name="customerName"
             value={checkoutForm.customerName}
             onChange={onCheckoutChange}
+            onFocus={() => onCheckoutFocus?.('customerName')}
             placeholder={labels.customerNamePlaceholder}
             required
           />
@@ -99,7 +101,12 @@ export default function CartPanel({
 
         <label>
           <span>{labels.pickupTime}</span>
-          <select name="pickupWindow" value={checkoutForm.pickupWindow} onChange={onCheckoutChange}>
+          <select
+            name="pickupWindow"
+            value={checkoutForm.pickupWindow}
+            onChange={onCheckoutChange}
+            onFocus={() => onCheckoutFocus?.('pickupWindow')}
+          >
             <option value="ASAP">{labels.asap}</option>
             <option value="10 minutes">{labels.tenMinutes}</option>
             <option value="20 minutes">{labels.twentyMinutes}</option>
@@ -109,7 +116,12 @@ export default function CartPanel({
 
         <label>
           <span>{labels.orderType}</span>
-          <select name="orderType" value={checkoutForm.orderType} onChange={onCheckoutChange}>
+          <select
+            name="orderType"
+            value={checkoutForm.orderType}
+            onChange={onCheckoutChange}
+            onFocus={() => onCheckoutFocus?.('orderType')}
+          >
             <option value="Pickup">{labels.pickup}</option>
             <option value="Dine-In">{labels.dineIn}</option>
           </select>
@@ -143,6 +155,7 @@ export default function CartPanel({
                   value={location.id}
                   checked={checkoutForm.pickupLocationId === location.id}
                   onChange={onCheckoutChange}
+                  onFocus={() => onCheckoutFocus?.('pickupLocationId', location.id)}
                 />
                 <div>
                   <strong>{location.name}</strong>
