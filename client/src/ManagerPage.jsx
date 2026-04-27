@@ -38,6 +38,20 @@ const EMPTY_INVENTORY_FORM = {
   itemCategory: 'supply'
 };
 
+const EMPTY_EMPLOYEE_EDIT_FORM = {
+  employeeId: '',
+  jobTitle: '',
+  firstName: '',
+  lastName: '',
+  schedule: '',
+  paymentInfo: '',
+  startDate: '',
+  hourlyPay: '',
+  benefits: '',
+  email: '',
+  pin: ''
+};
+
 function pad2(value) {
   return String(value).padStart(2, '0');
 }
@@ -441,6 +455,206 @@ function InventoryManagePanel({
   );
 }
 
+function EmployeeManagePanel({
+  rows,
+  form,
+  onFormChange,
+  onSelectRow,
+  onCreateEmployee,
+  onUpdateHourlyPay,
+  onUpdateDetails,
+  onTerminateEmployee,
+  onClearForm,
+  busy
+}) {
+  return (
+    <section style={styles.panel}>
+      <div style={styles.panelHeader}>
+        <div>
+          <h2 style={styles.panelTitle}>Employee Management</h2>
+          <p style={styles.hint}>Select an employee row, then update pay/details, terminate, or clear.</p>
+        </div>
+        <div style={styles.panelMeta}>{rows.length} employees</div>
+      </div>
+
+      <div style={styles.tableWrap}>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>Employee ID</th>
+              <th style={styles.th}>Job Title</th>
+              <th style={styles.th}>First Name</th>
+              <th style={styles.th}>Last Name</th>
+              <th style={styles.th}>Hourly Pay</th>
+              <th style={styles.th}>Email</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td style={styles.emptyCell} colSpan={6}>
+                  No employee records found.
+                </td>
+              </tr>
+            ) : (
+              rows.map((row) => {
+                const selected = String(form.employeeId) === String(row.employee_id);
+                return (
+                  <tr
+                    key={row.employee_id}
+                    style={selected ? styles.selectedRow : undefined}
+                    onClick={() => onSelectRow(row)}
+                  >
+                    <td style={styles.td}>{row.employee_id}</td>
+                    <td style={styles.td}>{row.job_title}</td>
+                    <td style={styles.td}>{row.first_name}</td>
+                    <td style={styles.td}>{row.last_name}</td>
+                    <td style={styles.td}>{formatMoney(row.hourly_pay)}</td>
+                    <td style={styles.td}>{row.email}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <form style={styles.employeeFormGrid} onSubmit={onUpdateDetails}>
+        <label style={styles.label}>
+          Employee ID
+          <input style={styles.input} value={form.employeeId} disabled placeholder="Select from table" />
+        </label>
+        <label style={styles.label}>
+          Job Title
+          <input
+            style={styles.input}
+            value={form.jobTitle}
+            onChange={(e) => onFormChange('jobTitle', e.target.value)}
+            required
+          />
+        </label>
+        <label style={styles.label}>
+          First Name
+          <input
+            style={styles.input}
+            value={form.firstName}
+            onChange={(e) => onFormChange('firstName', e.target.value)}
+            required
+          />
+        </label>
+        <label style={styles.label}>
+          Last Name
+          <input
+            style={styles.input}
+            value={form.lastName}
+            onChange={(e) => onFormChange('lastName', e.target.value)}
+            required
+          />
+        </label>
+        <label style={styles.label}>
+          Schedule
+          <input
+            style={styles.input}
+            value={form.schedule}
+            onChange={(e) => onFormChange('schedule', e.target.value)}
+            required
+          />
+        </label>
+        <label style={styles.label}>
+          Payment Info
+          <input
+            style={styles.input}
+            value={form.paymentInfo}
+            onChange={(e) => onFormChange('paymentInfo', e.target.value)}
+            required
+          />
+        </label>
+        <label style={styles.label}>
+          Start Date
+          <input
+            style={styles.input}
+            type="date"
+            value={form.startDate}
+            onChange={(e) => onFormChange('startDate', e.target.value)}
+            required
+          />
+        </label>
+        <label style={styles.label}>
+          Hourly Pay
+          <input
+            style={styles.input}
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.hourlyPay}
+            onChange={(e) => onFormChange('hourlyPay', e.target.value)}
+            required
+          />
+        </label>
+        <label style={styles.label}>
+          Benefits
+          <input
+            style={styles.input}
+            value={form.benefits}
+            onChange={(e) => onFormChange('benefits', e.target.value)}
+            required
+          />
+        </label>
+        <label style={styles.label}>
+          Email
+          <input
+            style={styles.input}
+            type="email"
+            value={form.email}
+            onChange={(e) => onFormChange('email', e.target.value)}
+            required
+          />
+        </label>
+        <label style={styles.label}>
+          4-Digit PIN (for create)
+          <input
+            style={styles.input}
+            type="password"
+            inputMode="numeric"
+            pattern="\d{4}"
+            value={form.pin}
+            onChange={(e) => onFormChange('pin', e.target.value.replace(/\D/g, '').slice(0, 4))}
+            placeholder="1234"
+          />
+        </label>
+
+        <div style={styles.formActionsRow}>
+          <button type="button" style={styles.primaryButton} onClick={onCreateEmployee} disabled={busy.employeeCreate}>
+            {busy.employeeCreate ? 'Creating…' : 'Create Employee'}
+          </button>
+          <button
+            type="button"
+            style={styles.secondaryButton}
+            onClick={onUpdateHourlyPay}
+            disabled={!form.employeeId || busy.employeeHourlyUpdate}
+          >
+            {busy.employeeHourlyUpdate ? 'Updating…' : 'Update Hourly Pay'}
+          </button>
+          <button type="submit" style={styles.primaryButton} disabled={!form.employeeId || busy.employeeUpdate}>
+            {busy.employeeUpdate ? 'Updating…' : 'Update Employee Details'}
+          </button>
+          <button
+            type="button"
+            style={styles.dangerButton}
+            onClick={onTerminateEmployee}
+            disabled={!form.employeeId || busy.employeeTerminate}
+          >
+            {busy.employeeTerminate ? 'Terminating…' : 'Terminate Employee'}
+          </button>
+          <button type="button" style={styles.secondaryButton} onClick={onClearForm}>
+            Clear
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
 function ManagerDashboard() {
   const [inventory, setInventory] = useState([]);
   const [inventoryForm, setInventoryForm] = useState(EMPTY_INVENTORY_FORM);
@@ -448,7 +662,7 @@ function ManagerDashboard() {
   const [usageRows, setUsageRows] = useState([]);
   const [xReportRows, setXReportRows] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [employeeForm, setEmployeeForm] = useState(EMPTY_EMPLOYEE_FORM);
+  const [employeeEditForm, setEmployeeEditForm] = useState(EMPTY_EMPLOYEE_EDIT_FORM);
   const [activeTab, setActiveTab] = useState('inventory');
 
   const [busy, setBusy] = useState({
@@ -460,7 +674,10 @@ function ManagerDashboard() {
     employees: false,
     employeeCreate: false,
     inventoryCreate: false,
-    inventoryUpdate: false
+    inventoryUpdate: false,
+    employeeHourlyUpdate: false,
+    employeeUpdate: false,
+    employeeTerminate: false
   });
 
   const [status, setStatus] = useState('Ready.');
@@ -698,31 +915,55 @@ function ManagerDashboard() {
     }
   }
 
-  function updateEmployeeForm(field, value) {
-    setEmployeeForm((current) => ({
+  function updateEmployeeEditForm(field, value) {
+    setEmployeeEditForm((current) => ({
       ...current,
       [field]: value
     }));
   }
 
-  async function handleCreateEmployee(event) {
-    event.preventDefault();
+  function selectEmployeeRow(row) {
+    setEmployeeEditForm({
+      employeeId: String(row.employee_id ?? ''),
+      jobTitle: String(row.job_title ?? ''),
+      firstName: String(row.first_name ?? ''),
+      lastName: String(row.last_name ?? ''),
+      schedule: String(row.schedule ?? ''),
+      paymentInfo: String(row.payment_info ?? ''),
+      startDate: String(row.start_date ?? '').slice(0, 10),
+      hourlyPay: String(row.hourly_pay ?? ''),
+      benefits: String(row.benefits ?? ''),
+      email: String(row.email ?? ''),
+      pin: ''
+    });
+  }
+
+  function clearEmployeeEditForm() {
+    setEmployeeEditForm(EMPTY_EMPLOYEE_EDIT_FORM);
+  }
+
+  async function handleCreateEmployee() {
+    if (!/^\d{4}$/.test(String(employeeEditForm.pin ?? ''))) {
+      setStatus('A 4-digit PIN is required to create an employee.');
+      return;
+    }
+
     setBusy((current) => ({ ...current, employeeCreate: true }));
 
     try {
       const payload = await fetchJson('/api/employees', {
         method: 'POST',
         body: JSON.stringify({
-          jobTitle: employeeForm.jobTitle,
-          firstName: employeeForm.firstName,
-          lastName: employeeForm.lastName,
-          schedule: employeeForm.schedule,
-          paymentInfo: employeeForm.paymentInfo,
-          startDate: employeeForm.startDate,
-          hourlyPay: employeeForm.hourlyPay,
-          benefits: employeeForm.benefits,
-          email: employeeForm.email,
-          pin: employeeForm.pin
+          jobTitle: employeeEditForm.jobTitle,
+          firstName: employeeEditForm.firstName,
+          lastName: employeeEditForm.lastName,
+          schedule: employeeEditForm.schedule,
+          paymentInfo: employeeEditForm.paymentInfo,
+          startDate: employeeEditForm.startDate,
+          hourlyPay: employeeEditForm.hourlyPay,
+          benefits: employeeEditForm.benefits,
+          email: employeeEditForm.email,
+          pin: employeeEditForm.pin
         })
       });
 
@@ -731,8 +972,8 @@ function ManagerDashboard() {
         const next = createdEmployee ? [...current, createdEmployee] : current;
         return next.slice().sort((a, b) => Number(a.employee_id) - Number(b.employee_id));
       });
-      setEmployeeForm({
-        ...EMPTY_EMPLOYEE_FORM,
+      setEmployeeEditForm({
+        ...EMPTY_EMPLOYEE_EDIT_FORM,
         startDate: new Date().toISOString().slice(0, 10)
       });
       setActiveTab('employees');
@@ -745,6 +986,106 @@ function ManagerDashboard() {
       setStatus(`Employee creation failed: ${error.message}`);
     } finally {
       setBusy((current) => ({ ...current, employeeCreate: false }));
+    }
+  }
+
+  async function handleUpdateHourlyPay() {
+    if (!employeeEditForm.employeeId) {
+      setStatus('Select an employee first.');
+      return;
+    }
+
+    setBusy((current) => ({ ...current, employeeHourlyUpdate: true }));
+    try {
+      const payload = await fetchJson(`/api/employees/${employeeEditForm.employeeId}/hourly-pay`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          hourlyPay: employeeEditForm.hourlyPay
+        })
+      });
+      const updated = payload?.item;
+      if (updated) {
+        setEmployees((current) =>
+          current.map((row) => (String(row.employee_id) === String(updated.employee_id) ? updated : row))
+        );
+        selectEmployeeRow(updated);
+      } else {
+        await loadEmployees();
+      }
+      setStatus(updated ? `Updated hourly pay for ${updated.first_name} ${updated.last_name}.` : 'Updated hourly pay.');
+    } catch (error) {
+      setStatus(`Hourly pay update failed: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, employeeHourlyUpdate: false }));
+    }
+  }
+
+  async function handleUpdateEmployeeDetails(event) {
+    event.preventDefault();
+    if (!employeeEditForm.employeeId) {
+      setStatus('Select an employee first.');
+      return;
+    }
+
+    setBusy((current) => ({ ...current, employeeUpdate: true }));
+    try {
+      const payload = await fetchJson(`/api/employees/${employeeEditForm.employeeId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          jobTitle: employeeEditForm.jobTitle,
+          firstName: employeeEditForm.firstName,
+          lastName: employeeEditForm.lastName,
+          schedule: employeeEditForm.schedule,
+          paymentInfo: employeeEditForm.paymentInfo,
+          startDate: employeeEditForm.startDate,
+          hourlyPay: employeeEditForm.hourlyPay,
+          benefits: employeeEditForm.benefits,
+          email: employeeEditForm.email
+        })
+      });
+
+      const updated = payload?.item;
+      if (updated) {
+        setEmployees((current) =>
+          current.map((row) => (String(row.employee_id) === String(updated.employee_id) ? updated : row))
+        );
+        selectEmployeeRow(updated);
+      } else {
+        await loadEmployees();
+      }
+      setStatus(updated ? `Updated employee details for ${updated.first_name} ${updated.last_name}.` : 'Employee updated.');
+    } catch (error) {
+      setStatus(`Employee detail update failed: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, employeeUpdate: false }));
+    }
+  }
+
+  async function handleTerminateEmployee() {
+    if (!employeeEditForm.employeeId) {
+      setStatus('Select an employee first.');
+      return;
+    }
+
+    setBusy((current) => ({ ...current, employeeTerminate: true }));
+    try {
+      const payload = await fetchJson(`/api/employees/${employeeEditForm.employeeId}/terminate`, {
+        method: 'POST'
+      });
+      const updated = payload?.item;
+      if (updated) {
+        setEmployees((current) =>
+          current.map((row) => (String(row.employee_id) === String(updated.employee_id) ? updated : row))
+        );
+        selectEmployeeRow(updated);
+      } else {
+        await loadEmployees();
+      }
+      setStatus(updated ? `Terminated employee ${updated.first_name} ${updated.last_name}.` : 'Employee terminated.');
+    } catch (error) {
+      setStatus(`Termination failed: ${error.message}`);
+    } finally {
+      setBusy((current) => ({ ...current, employeeTerminate: false }));
     }
   }
 
@@ -965,11 +1306,17 @@ function ManagerDashboard() {
                 hourly_pay: (value) => formatMoney(value)
               }}
             />
-            <EmployeeCreatePanel
-              form={employeeForm}
-              onChange={updateEmployeeForm}
-              onSubmit={handleCreateEmployee}
-              busy={busy.employeeCreate}
+            <EmployeeManagePanel
+              rows={employees}
+              form={employeeEditForm}
+              onFormChange={updateEmployeeEditForm}
+              onSelectRow={selectEmployeeRow}
+              onCreateEmployee={handleCreateEmployee}
+              onUpdateHourlyPay={handleUpdateHourlyPay}
+              onUpdateDetails={handleUpdateEmployeeDetails}
+              onTerminateEmployee={handleTerminateEmployee}
+              onClearForm={clearEmployeeEditForm}
+              busy={busy}
             />
           </div>
         ) : null}
