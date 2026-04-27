@@ -164,7 +164,7 @@ export default function PersonalAssistant({
         <div className="personal-assistant__panel" id="personal-assistant-panel" role="dialog" aria-label={title}>
           <div className="personal-assistant__header">
             <div>
-              <p className="personal-assistant__eyebrow">ChatGPT</p>
+              <p className="personal-assistant__eyebrow">Gemini</p>
               <h3 className="personal-assistant__title">{title}</h3>
             </div>
             <button
