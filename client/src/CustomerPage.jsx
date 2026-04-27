@@ -1308,6 +1308,7 @@ export default function CustomerPage() {
           labels={translatedText}
           translateSize={translateSize}
           translateIce={translateIce}
+          ttsEnabled={ttsEnabled}
         />
       ) : null}
 
