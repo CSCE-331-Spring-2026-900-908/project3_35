@@ -154,12 +154,25 @@ function InventoryManagePanel({
   onClearForm,
   busy
 }) {
+  const [showInventoryPicker, setShowInventoryPicker] = useState(false);
+
+  function handleInventoryPick(itemId) {
+    if (!itemId) {
+      return;
+    }
+    const selectedRow = rows.find((row) => String(row.item_inventory_id) === String(itemId));
+    if (selectedRow) {
+      onSelectRow(selectedRow);
+      setShowInventoryPicker(false);
+    }
+  }
+
   return (
     <section style={styles.panel}>
       <div style={styles.panelHeader}>
         <div>
           <h2 style={styles.panelTitle}>Inventory Management</h2>
-          <p style={styles.hint}>Select an item to edit stock, price, and category, or add a new one.</p>
+          <p style={styles.hint}>Pick an item by name to edit stock, price, and category, or add a new one.</p>
         </div>
         <div style={styles.panelMeta}>{rows.length} items</div>
       </div>
@@ -268,6 +281,14 @@ function InventoryManagePanel({
           <button
             type="button"
             style={styles.secondaryButton}
+            onClick={() => setShowInventoryPicker((current) => !current)}
+            disabled={rows.length === 0}
+          >
+            {showInventoryPicker ? 'Hide Item List' : 'Choose Item To Update'}
+          </button>
+          <button
+            type="button"
+            style={styles.secondaryButton}
             onClick={onUpdateItem}
             disabled={!form.itemInventoryId || busy.inventoryUpdate}
           >
@@ -277,6 +298,26 @@ function InventoryManagePanel({
             Clear Form
           </button>
         </div>
+
+        {showInventoryPicker ? (
+          <div style={styles.inventoryPickerWrap}>
+            <label style={styles.label}>
+              Inventory Item Name
+              <select
+                style={styles.input}
+                value={form.itemInventoryId}
+                onChange={(event) => handleInventoryPick(event.target.value)}
+              >
+                <option value="">Select an inventory item</option>
+                {rows.map((row) => (
+                  <option key={row.item_inventory_id} value={row.item_inventory_id}>
+                    {row.name} (ID {row.item_inventory_id})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        ) : null}
       </form>
     </section>
   );
@@ -1780,6 +1821,10 @@ const styles = {
     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
     gap: '14px',
     marginTop: '14px'
+  },
+  inventoryPickerWrap: {
+    margin: '10px 0 14px',
+    maxWidth: '460px'
   },
   formActionsRow: {
     gridColumn: '1 / -1',
