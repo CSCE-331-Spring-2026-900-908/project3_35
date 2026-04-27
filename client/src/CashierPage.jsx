@@ -307,7 +307,7 @@ function CashierDashboard() {
                   <div className="option-column">
                     <h3 className="option-label">Ice Level</h3>
                     <div className="options-grid">
-                      {['No Ice', 'Less Ice', 'Regular Ice', 'Extra Ice'].map(level => (
+                      {['Hot', 'No Ice', 'Less Ice', 'Regular Ice', 'Extra Ice'].map(level => (
                         <button 
                           key={level} 
                           onClick={() => updateSelection('ice', level)} 
