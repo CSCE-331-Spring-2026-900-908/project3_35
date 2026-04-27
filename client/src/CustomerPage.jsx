@@ -38,7 +38,7 @@ const baseText = {
   note: 'Note',
   remove: 'Remove',
   name: 'Name',
-  customerNamePlaceholder: 'Customer name',
+  customerNamePlaceholder: 'Customer name (Optional)',
   pickupTime: 'Pickup Time',
   asap: 'ASAP',
   tenMinutes: '10 minutes',
