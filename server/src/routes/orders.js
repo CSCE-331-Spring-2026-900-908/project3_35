@@ -27,8 +27,40 @@ function normalizeLineItem(item) {
   };
 }
 
+function addRequiredInventory(requiredInventory, inventoryId, quantityNeeded) {
+  requiredInventory.set(inventoryId, (requiredInventory.get(inventoryId) || 0) + quantityNeeded);
+}
+
+async function findInventoryIdByName(client, cache, name, category) {
+  const cacheKey = `${category}::${name}`.toLowerCase();
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+
+  const result = await client.query(
+    `
+      SELECT item_inventory_id
+      FROM item_inventory
+      WHERE LOWER(name) = LOWER($1)
+        AND LOWER(item_category) = LOWER($2)
+      ORDER BY item_inventory_id
+      LIMIT 1
+    `,
+    [name, category]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error(`Inventory item "${name}" in category "${category}" was not found.`);
+  }
+
+  const inventoryId = Number(result.rows[0].item_inventory_id);
+  cache.set(cacheKey, inventoryId);
+  return inventoryId;
+}
+
 async function calculateRequiredInventory(client, items) {
   const requiredInventory = new Map();
+  const inventoryLookupCache = new Map();
 
   for (const item of items) {
     const recipeResult = await client.query(
@@ -40,17 +72,39 @@ async function calculateRequiredInventory(client, items) {
       [item.menuItemId]
     );
 
+    const recipeInventoryIds = new Set();
     for (const row of recipeResult.rows) {
       const inventoryId = Number(row.item_inventory_id);
       const needed = Number(row.quantity) * item.quantity;
-      requiredInventory.set(inventoryId, (requiredInventory.get(inventoryId) || 0) + needed);
+      recipeInventoryIds.add(inventoryId);
+      addRequiredInventory(requiredInventory, inventoryId, needed);
+    }
+
+    const normalizedSize = String(item.size || 'Regular').trim().toLowerCase();
+    const cupName = normalizedSize === 'large' ? 'Large Cup' : 'Medium Cup';
+    const lidName = normalizedSize === 'large' ? 'Lid Large' : 'Lid Medium';
+    const [cupInventoryId, lidInventoryId, strawInventoryId, napkinInventoryId] = await Promise.all([
+      findInventoryIdByName(client, inventoryLookupCache, cupName, 'packaging'),
+      findInventoryIdByName(client, inventoryLookupCache, lidName, 'packaging'),
+      findInventoryIdByName(client, inventoryLookupCache, 'Straw', 'supply'),
+      findInventoryIdByName(client, inventoryLookupCache, 'Napkin', 'supply')
+    ]);
+
+    if (!recipeInventoryIds.has(cupInventoryId)) {
+      addRequiredInventory(requiredInventory, cupInventoryId, item.quantity);
+    }
+    if (!recipeInventoryIds.has(lidInventoryId)) {
+      addRequiredInventory(requiredInventory, lidInventoryId, item.quantity);
+    }
+    if (!recipeInventoryIds.has(strawInventoryId)) {
+      addRequiredInventory(requiredInventory, strawInventoryId, item.quantity);
+    }
+    if (!recipeInventoryIds.has(napkinInventoryId)) {
+      addRequiredInventory(requiredInventory, napkinInventoryId, item.quantity);
     }
 
     for (const toppingInventoryId of item.toppingInventoryIds) {
-      requiredInventory.set(
-        toppingInventoryId,
-        (requiredInventory.get(toppingInventoryId) || 0) + item.quantity
-      );
+      addRequiredInventory(requiredInventory, toppingInventoryId, item.quantity);
     }
   }
 
