@@ -286,7 +286,7 @@ function CashierDashboard() {
                 <div className="option-section">
                   <h3 className="option-label">Size</h3>
                   <div className="category-row">
-                    {['Regular', 'Large'].map(size => (
+                    {['Small', 'Regular', 'Large'].map(size => (
                       <button 
                         key={size} 
                         onClick={() => updateSelection('size', size)} 
@@ -331,7 +331,7 @@ function CashierDashboard() {
                   <div className="option-column">
                     <h3 className="option-label">Sweetness</h3>
                     <div className="options-grid">
-                      {['0%', '25%', '50%', '75%', '100%'].map(level => (
+                      {['0%', '25%', '50%', '75%', '100%', '125%'].map(level => (
                         <button 
                           key={level} 
                           onClick={() => updateSelection('sweetness', level)} 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
-const SIZE_CHOICES = ['Regular', 'Large'];
-const SWEETNESS_CHOICES = ['0%', '25%', '50%', '75%', '100%'];
+const SIZE_CHOICES = ['Small', 'Regular', 'Large'];
+const SWEETNESS_CHOICES = ['0%', '25%', '50%', '75%', '100%', '125%'];
 const ICE_CHOICES = ['Hot', 'No Ice', 'Light Ice', 'Regular Ice'];
 
 const TTS_RATE = 1.45;
