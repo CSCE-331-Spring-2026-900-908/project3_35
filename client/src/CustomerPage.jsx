@@ -1,15 +1,23 @@
+// Imports React hooks for state, side effects, and memoized calculations.
 import { useEffect, useMemo, useState } from 'react';
+
+// Imports the major customer-page components.
 import AccessibilityOrderGuide from './components/AccessibilityOrderGuide';
 import CartPanel from './components/CartPanel';
 import CustomizerPanel from './components/CustomizerPanel';
 import MenuCard from './components/MenuCard';
 import PersonalAssistant from './components/PersonalAssistant';
 import TtsToggle from './components/TtsToggle';
+
+// Imports API URL helper and the custom TTS hook.
 import { apiUrl } from './apiBase';
 import useTextToSpeech from './hooks/useTextToSpeech';
 
+// Sales tax rate used when calculating the final order total.
 const TAX_RATE = 0.0825;
 
+// Default English text used throughout the customer page.
+// These values are also sent through the translation API when another language is selected.
 const baseText = {
   heroTitle: 'Handcrafted bubble tea, made your way.',
   heroSubtitle:
@@ -84,6 +92,7 @@ const baseText = {
   assistantClose: 'Close assistant',
   assistantYou: 'You',
 
+  // Text labels used by the TTS accessibility system.
   ttsOn: 'TTS On',
   ttsOff: 'TTS Off',
   ttsEnable: 'Turn text-to-speech on',
@@ -104,6 +113,7 @@ const baseText = {
   locationFocused: 'Store location option: {locationName}. Address: {address}.',
   categorySelected: 'Menu category selected: {category}.',
 
+  // Text labels for the accessible ordering guide.
   accessibleGuideOpen: 'Open Accessible Ordering',
   accessibleGuideClose: 'Close Accessible Ordering',
   accessibleGuideTitle: 'Accessible Ordering Guide',
@@ -125,6 +135,7 @@ const baseText = {
   cartSummaryIntroPlural: 'Your cart has {count} items. Total is {total}.'
 };
 
+// Hard-coded store locations used for pickup selection and directions.
 const STORE_LOCATIONS = [
   {
     id: 'northgate',
@@ -149,6 +160,7 @@ const STORE_LOCATIONS = [
   }
 ];
 
+// Sample menu used if the backend menu API is unavailable.
 const fallbackMenu = [
   {
     id: 1,
@@ -224,6 +236,7 @@ const fallbackMenu = [
   }
 ];
 
+// Converts a raw topping object from the backend into a consistent frontend format.
 function normalizeTopping(topping, index, itemId) {
   return {
     id: topping?.id ?? topping?.item_inventory_id ?? itemId * 100 + index + 1,
@@ -232,6 +245,7 @@ function normalizeTopping(topping, index, itemId) {
   };
 }
 
+// Converts a raw menu item from the backend into the format expected by the customer page.
 function normalizeMenuItem(item, index) {
   const rawToppings = Array.isArray(item?.toppings)
     ? item.toppings
@@ -251,6 +265,7 @@ function normalizeMenuItem(item, index) {
   };
 }
 
+// Normalizes the entire menu and falls back to sample data if no valid menu is provided.
 function normalizeMenu(menu) {
   if (!Array.isArray(menu) || menu.length === 0) {
     return fallbackMenu;
@@ -259,6 +274,7 @@ function normalizeMenu(menu) {
   return menu.map((item, index) => normalizeMenuItem(item, index));
 }
 
+// Creates the default drink customization state when a menu item is selected.
 function buildDefaultSelection(item) {
   return {
     itemId: item.id,
@@ -271,6 +287,7 @@ function buildDefaultSelection(item) {
   };
 }
 
+// Calculates the drink total based on size and selected toppings.
 function calculateTotal(item, selection) {
   if (!item || !selection) {
     return 0;
@@ -284,6 +301,7 @@ function calculateTotal(item, selection) {
   return Number((item.basePrice + sizeUpcharge + toppingTotal).toFixed(2));
 }
 
+// Adds display fields to menu items so translated and original text can be handled separately.
 function withDisplayFields(menu) {
   return menu.map((item) => ({
     ...item,
@@ -297,10 +315,12 @@ function withDisplayFields(menu) {
   }));
 }
 
+// Converts degrees to radians for the distance formula.
 function toRadians(value) {
   return (value * Math.PI) / 180;
 }
 
+// Calculates the distance in miles between the user's location and a store.
 function calculateDistanceMiles(origin, destination) {
   if (!origin || !destination) {
     return null;
@@ -319,23 +339,37 @@ function calculateDistanceMiles(origin, destination) {
   return earthRadiusMiles * c;
 }
 
+// Main customer ordering page.
 export default function CustomerPage() {
+  // Menu and translation state.
   const [menu, setMenu] = useState(normalizeMenu(fallbackMenu));
   const [translatedMenu, setTranslatedMenu] = useState(withDisplayFields(normalizeMenu(fallbackMenu)));
+
+  // Current visible menu category.
   const [activeCategory, setActiveCategory] = useState('All');
+
+  // Current item being customized.
   const [selectedItem, setSelectedItem] = useState(null);
   const [selection, setSelection] = useState(null);
+
+  // Cart and checkout state.
   const [cart, setCart] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState(baseText.statusReady);
+
+  // Customer checkout form state.
   const [checkoutForm, setCheckoutForm] = useState({
     customerName: '',
     pickupWindow: 'ASAP',
     orderType: 'Pickup',
     pickupLocationId: STORE_LOCATIONS[0].id
   });
+
+  // Language and translated UI text state.
   const [language, setLanguage] = useState('en');
   const [translatedText, setTranslatedText] = useState(baseText);
+
+  // Location and directions state.
   const [userCoordinates, setUserCoordinates] = useState(null);
   const [locatingUser, setLocatingUser] = useState(false);
   const [directions, setDirections] = useState({
@@ -345,9 +379,12 @@ export default function CustomerPage() {
     steps: [],
     routeCoordinates: []
   });
+
+  // Accessible ordering guide state.
   const [accessibilityGuideOpen, setAccessibilityGuideOpen] = useState(false);
   const [accessibilityGuideIndex, setAccessibilityGuideIndex] = useState(0);
 
+  // TTS state and functions from the custom hook.
   const {
     ttsEnabled,
     toggleTts,
@@ -356,16 +393,19 @@ export default function CustomerPage() {
     cancelSpeech
   } = useTextToSpeech(language);
 
+  // Finds the currently selected pickup location.
   const selectedLocation = useMemo(
     () => STORE_LOCATIONS.find((location) => location.id === checkoutForm.pickupLocationId) || STORE_LOCATIONS[0],
     [checkoutForm.pickupLocationId]
   );
 
+  // Calculates the displayed distance to the selected pickup location.
   const selectedLocationDistance = useMemo(() => {
     const distance = calculateDistanceMiles(userCoordinates, selectedLocation);
     return distance === null ? null : distance.toFixed(1);
   }, [selectedLocation, userCoordinates]);
 
+  // Loads route directions whenever the selected store or user location changes.
   useEffect(() => {
     let cancelled = false;
 
@@ -432,6 +472,7 @@ export default function CustomerPage() {
     };
   }, [selectedLocation, userCoordinates]);
 
+  // Sends text to the backend translation API.
   async function translateTexts(texts, targetLanguage) {
     if (!Array.isArray(texts) || texts.length === 0) {
       return [];
@@ -452,6 +493,7 @@ export default function CustomerPage() {
     return Array.isArray(data.translations) ? data.translations : [];
   }
 
+  // Provides simple hard-coded translations for category labels.
   function getTranslatedCategory(category) {
     const categoryMap = {
       All:
@@ -499,6 +541,7 @@ export default function CustomerPage() {
     return categoryMap[category] || category;
   }
 
+  // Translates drink size labels.
   function translateSize(size) {
     if (language === 'es') {
       if (size === 'Regular') return 'Regular';
@@ -515,6 +558,7 @@ export default function CustomerPage() {
     return size;
   }
 
+  // Translates ice level labels.
   function translateIce(level) {
     if (language === 'es') {
       if (level === 'No Ice') return 'Sin hielo';
@@ -534,6 +578,8 @@ export default function CustomerPage() {
     return level;
   }
 
+  // Speaks an accessibility message.
+  // If TTS is off, this turns it on first so the accessible guide can immediately read instructions.
   function speakAccessibly(message) {
     if (ttsEnabled) {
       speak(message);
@@ -547,6 +593,7 @@ export default function CustomerPage() {
     }, 100);
   }
 
+  // Loads menu data from the backend, or falls back to sample data if the request fails.
   useEffect(() => {
     async function loadMenu() {
       try {
@@ -579,6 +626,7 @@ export default function CustomerPage() {
     loadMenu();
   }, []);
 
+  // Translates general UI text whenever the selected language changes.
   useEffect(() => {
     let cancelled = false;
 
@@ -616,6 +664,7 @@ export default function CustomerPage() {
     };
   }, [language]);
 
+  // Translates menu item names, descriptions, and topping names.
   useEffect(() => {
     let cancelled = false;
 
@@ -651,6 +700,7 @@ export default function CustomerPage() {
         const allTexts = [];
         const markers = [];
 
+        // Creates a flat list of menu text to translate and tracks where each translation belongs.
         menu.forEach((item) => {
           allTexts.push(item.name);
           markers.push({ type: 'itemName', itemId: item.id });
@@ -666,6 +716,7 @@ export default function CustomerPage() {
 
         const BATCH_SIZE = 25;
 
+        // Sends translations in batches to avoid sending too much text at once.
         for (let i = 0; i < allTexts.length; i += BATCH_SIZE) {
           const textBatch = allTexts.slice(i, i + BATCH_SIZE);
           const markerBatch = markers.slice(i, i + BATCH_SIZE);
@@ -709,6 +760,7 @@ export default function CustomerPage() {
     };
   }, [language, menu]);
 
+  // Adds modal behavior when the customizer is open.
   useEffect(() => {
     if (!selectedItem) {
       document.body.classList.remove('modal-open');
@@ -731,10 +783,12 @@ export default function CustomerPage() {
     };
   }, [selectedItem]);
 
+  // Builds the category list from the loaded menu.
   const categories = useMemo(() => {
     return ['All', ...new Set(menu.map((item) => item.category))];
   }, [menu]);
 
+  // Filters the visible menu based on the selected category.
   const visibleMenu = useMemo(() => {
     if (activeCategory === 'All') {
       return translatedMenu;
@@ -743,12 +797,14 @@ export default function CustomerPage() {
     return translatedMenu.filter((item) => item.category === activeCategory);
   }, [activeCategory, translatedMenu]);
 
+  // Resets the accessible guide index if the visible menu becomes shorter.
   useEffect(() => {
     if (accessibilityGuideIndex > visibleMenu.length - 1) {
       setAccessibilityGuideIndex(0);
     }
   }, [accessibilityGuideIndex, visibleMenu.length]);
 
+  // Calculates order subtotal, tax, and total.
   const subtotal = useMemo(
     () => Number(cart.reduce((sum, item) => sum + Number(item.total || 0), 0).toFixed(2)),
     [cart]
@@ -756,6 +812,7 @@ export default function CustomerPage() {
   const tax = Number((subtotal * TAX_RATE).toFixed(2));
   const total = Number((subtotal + tax).toFixed(2));
 
+  // Toggles text-to-speech on or off.
   function handleToggleTts() {
     const nextEnabled = !ttsEnabled;
     toggleTts();
@@ -772,6 +829,7 @@ export default function CustomerPage() {
     }
   }
 
+  // Changes the active menu category and announces the change if TTS is enabled.
   function handleCategorySelect(category) {
     setActiveCategory(category);
     setAccessibilityGuideIndex(0);
@@ -784,6 +842,7 @@ export default function CustomerPage() {
     );
   }
 
+  // Opens the drink customization modal for the selected item.
   function openCustomizer(item) {
     const translatedItem = translatedMenu.find((entry) => entry.id === item.id) || item;
     const nextSelection = buildDefaultSelection(translatedItem);
@@ -799,6 +858,7 @@ export default function CustomerPage() {
     );
   }
 
+  // Updates a customization field and recalculates the drink total.
   function updateSelection(field, value) {
     if (!selectedItem || !selection) {
       return;
@@ -829,6 +889,7 @@ export default function CustomerPage() {
     );
   }
 
+  // Adds or removes a topping from the current drink selection.
   function toggleTopping(name) {
     if (!selectedItem || !selection) {
       return;
@@ -854,6 +915,7 @@ export default function CustomerPage() {
     );
   }
 
+  // Builds a cart item from a customized drink selection.
   function buildCartItemFromSelection(item, currentSelection) {
     const selectedToppings = (item.toppings || []).filter((topping) =>
       currentSelection.toppings.includes(topping.name)
@@ -880,6 +942,7 @@ export default function CustomerPage() {
     };
   }
 
+  // Adds the customized drink to the cart.
   function addToCart() {
     if (!selectedItem || !selection) {
       return;
@@ -901,6 +964,7 @@ export default function CustomerPage() {
     setSelection(null);
   }
 
+  // Adds an item to the cart using default customization options.
   function addDefaultItemToCart(item) {
     const translatedItem = translatedMenu.find((entry) => entry.id === item.id) || item;
     const defaultSelection = buildDefaultSelection(translatedItem);
@@ -919,6 +983,7 @@ export default function CustomerPage() {
     speakAccessibly(`${message} Default options are regular size, 75 percent sweetness, and regular ice.`);
   }
 
+  // Reads a spoken summary of the current cart.
   function readCartSummary() {
     if (cart.length === 0) {
       speakAccessibly(translatedText.cartSummaryEmpty || 'Your cart is empty.');
@@ -947,6 +1012,7 @@ export default function CustomerPage() {
     speakAccessibly(`${intro} ${itemText}`);
   }
 
+  // Removes an item from the cart.
   function removeCartItem(id) {
     const removedItem = cart.find((item) => item.id === id);
 
@@ -962,11 +1028,13 @@ export default function CustomerPage() {
     }
   }
 
+  // Closes the customization modal.
   function closeCustomizer() {
     setSelectedItem(null);
     setSelection(null);
   }
 
+  // Updates checkout form fields and announces important changes through TTS.
   function handleCheckoutChange(event) {
     const { name, value } = event.target;
 
@@ -1015,6 +1083,7 @@ export default function CustomerPage() {
     }
   }
 
+  // Announces checkout fields when they receive focus.
   function speakCheckoutFocus(fieldName, extraValue = '') {
     if (fieldName === 'customerName') {
       speak(translatedText.nameFieldFocused || 'Customer name field. Enter the name for the order.');
@@ -1041,6 +1110,7 @@ export default function CustomerPage() {
     }
   }
 
+  // Requests the user's current location and updates distance/directions information.
   function requestUserLocation() {
     if (!navigator.geolocation) {
       setStatusMessage(translatedText.locationPermissionError);
@@ -1090,6 +1160,7 @@ export default function CustomerPage() {
     );
   }
 
+  // Sends the order to the backend order API.
   async function handleSubmitOrder(event) {
     event.preventDefault();
 
@@ -1170,6 +1241,7 @@ export default function CustomerPage() {
     }
   }
 
+  // Creates translated cart display fields for the cart panel.
   const translatedCart = useMemo(
     () =>
       cart.map((item) => ({
