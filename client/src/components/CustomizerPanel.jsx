@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const SIZE_CHOICES = ['Regular', 'Large'];
 const SWEETNESS_CHOICES = ['0%', '25%', '50%', '75%', '100%'];
-const ICE_CHOICES = ['No Ice', 'Light Ice', 'Regular Ice'];
+const ICE_CHOICES = ['Hot', 'No Ice', 'Light Ice', 'Regular Ice'];
 
 const TTS_RATE = 1.45;
 
