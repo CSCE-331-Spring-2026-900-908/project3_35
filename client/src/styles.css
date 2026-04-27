@@ -644,6 +644,11 @@ textarea:focus-visible {
   overflow: hidden;
 }
 
+/* Native [hidden] is overridden by .personal-assistant__panel { display: flex }; force hide when closed. */
+.personal-assistant__panel[hidden] {
+  display: none !important;
+}
+
 .personal-assistant__header {
   display: flex;
   align-items: flex-start;
