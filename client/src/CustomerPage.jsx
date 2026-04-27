@@ -1169,7 +1169,7 @@ export default function CustomerPage() {
     }
 
     const payload = {
-      customerName: checkoutForm.customerName,
+      customerName: checkoutForm.customerName || 'Guest',
       pickupWindow: checkoutForm.pickupWindow,
       orderType: checkoutForm.orderType,
       pickupLocationId: checkoutForm.pickupLocationId,

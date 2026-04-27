@@ -95,7 +95,6 @@ export default function CartPanel({
             onChange={onCheckoutChange}
             onFocus={() => onCheckoutFocus?.('customerName')}
             placeholder={labels.customerNamePlaceholder}
-            required
           />
         </label>
 
